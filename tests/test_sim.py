@@ -372,16 +372,27 @@ class TestEpisodeRunner:
         self, params: SimParams, payment: FailedPayment, customer: Customer
     ) -> None:
         """A policy that loops on *executing* actions still hits the safety bound."""
+        from recoup.guardrails import Guardrails
         from recoup.sim.episode import MAX_ACTIONS_PER_EPISODE
 
-        # No opt-out hazard, so zero-delay outreach succeeds indefinitely.
+        # No opt-out hazard and no contact rate limit, so zero-delay outreach is allowed
+        # indefinitely and only the hard action bound can stop it.
         never_tires = params.with_overrides(opt_out_hazard_per_contact=0.0)
         model, rails = self._model(never_tires)
         policy = _ScriptedPolicy(
             [Action.outreach(0.0, ContactChannel.EMAIL)] * (MAX_ACTIONS_PER_EPISODE + 10)
         )
 
-        result = run_episode(payment, customer, policy, model, rails, never_tires, _rng())
+        result = run_episode(
+            payment,
+            customer,
+            policy,
+            model,
+            rails,
+            never_tires,
+            _rng(),
+            guardrails=Guardrails(max_contacts_per_window=10**6),
+        )
         assert result.hit_action_limit
 
 

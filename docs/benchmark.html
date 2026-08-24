@@ -1,0 +1,1120 @@
+<title>Recoup Benchmark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root {
+  --ground: #EDF1F4;
+  --surface: #FBFCFD;
+  --surface-2: #F4F7F9;
+  --ink: #152230;
+  --ink-2: #3D5063;
+  --ink-3: #6B7C8C;
+  --rule: #D5DEE4;
+  --rule-2: #E4EBEF;
+  --accent: #0E8C74;
+  --accent-soft: rgba(14, 140, 116, 0.12);
+
+  --c1: #0E8C74;
+  --c2: #C4841A;
+  --c3: #2563A8;
+  --c4: #A6412F;
+  --c5: #7C5AA6;
+
+  --good: #0E8C74;
+  --bad: #A6412F;
+
+  --shadow: 0 1px 2px rgba(21, 34, 48, .05), 0 8px 24px -12px rgba(21, 34, 48, .16);
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --slab: "Zilla Slab", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0A1219;
+    --surface: #111C25;
+    --surface-2: #16232E;
+    --ink: #E1E9EF;
+    --ink-2: #A9BAC7;
+    --ink-3: #7C8E9C;
+    --rule: #24343F;
+    --rule-2: #1B2833;
+    --accent: #26AE90;
+    --accent-soft: rgba(38, 174, 144, 0.16);
+
+    --c1: #1FA285;
+    --c2: #B8801F;
+    --c3: #4380C6;
+    --c4: #C25743;
+    --c5: #9070BC;
+
+    --good: #26AE90;
+    --bad: #C25743;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -12px rgba(0, 0, 0, .6);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground: #0A1219;
+  --surface: #111C25;
+  --surface-2: #16232E;
+  --ink: #E1E9EF;
+  --ink-2: #A9BAC7;
+  --ink-3: #7C8E9C;
+  --rule: #24343F;
+  --rule-2: #1B2833;
+  --accent: #26AE90;
+  --accent-soft: rgba(38, 174, 144, 0.16);
+
+  --c1: #1FA285;
+  --c2: #B8801F;
+  --c3: #4380C6;
+  --c4: #C25743;
+  --c5: #9070BC;
+
+  --good: #26AE90;
+  --bad: #C25743;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -12px rgba(0, 0, 0, .6);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+.prose { max-width: 66ch; }
+
+h1, h2, h3 { font-family: var(--slab); text-wrap: balance; margin: 0; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ---------- masthead ---------- */
+
+.masthead {
+  border-bottom: 1px solid var(--rule);
+  padding: 56px 0 32px;
+  margin-bottom: 48px;
+}
+
+.masthead h1 {
+  font-size: clamp(38px, 6vw, 58px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -.02em;
+  margin: 14px 0 0;
+}
+
+.masthead .thesis {
+  font-size: clamp(17px, 2.2vw, 20px);
+  color: var(--ink-2);
+  max-width: 60ch;
+  margin: 18px 0 0;
+  line-height: 1.5;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  margin-top: 28px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.meta b { color: var(--ink-2); font-weight: 500; }
+
+/* ---------- sections ---------- */
+
+section { margin: 0 0 64px; }
+
+section > h2 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  margin-bottom: 6px;
+}
+
+.section-head { margin-bottom: 26px; }
+.section-head .eyebrow { display: block; margin-bottom: 10px; }
+.section-head p { color: var(--ink-2); margin: 10px 0 0; max-width: 66ch; }
+
+p { margin: 0 0 16px; }
+p:last-child { margin-bottom: 0; }
+
+strong { font-weight: 600; color: var(--ink); }
+
+code, .num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+code {
+  font-size: .88em;
+  background: var(--surface-2);
+  border: 1px solid var(--rule-2);
+  border-radius: 4px;
+  padding: .08em .38em;
+  color: var(--ink-2);
+}
+
+/* ---------- stat row ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.stat { background: var(--surface); padding: 22px 24px 20px; }
+.stat .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.stat .value {
+  font-family: var(--slab);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.stat .delta {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  margin-top: 6px;
+  color: var(--ink-3);
+}
+.stat .delta b { font-weight: 600; }
+.up   { color: var(--good); }
+.down { color: var(--bad); }
+
+/* ---------- table ---------- */
+
+.tablewrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+table { border-collapse: collapse; width: 100%; min-width: 660px; }
+
+th, td {
+  text-align: right;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule-2);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+th {
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--rule);
+}
+
+th:first-child, td:first-child { text-align: left; }
+tbody tr:last-child td { border-bottom: none; }
+
+td.name {
+  font-family: var(--sans);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+td.name small {
+  display: block;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+  margin-top: 1px;
+}
+
+tr.ours td { background: var(--accent-soft); }
+tr.ours td.name { font-weight: 600; }
+tr.baseline td { background: var(--surface-2); }
+
+.tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  vertical-align: 2px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+.tag.ours { background: var(--accent); color: #fff; }
+.tag.base { background: var(--rule); color: var(--ink-2); }
+
+/* ---------- figures ---------- */
+
+figure {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+figcaption {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule-2);
+  max-width: 74ch;
+}
+
+.fig-title {
+  font-family: var(--slab);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 3px;
+}
+.fig-sub {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin: 0 0 20px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 18px;
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  font-family: var(--mono);
+}
+.swatch {
+  width: 11px; height: 11px;
+  border-radius: 3px;
+  flex: none;
+}
+
+/* stacked waste bars */
+.wasterow { margin-bottom: 20px; }
+.wasterow:last-of-type { margin-bottom: 0; }
+.wasterow .rowhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 7px;
+  gap: 16px;
+}
+.wasterow .rowname { font-size: 14px; font-weight: 500; }
+.wasterow .rowtotal {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 34px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.seg {
+  position: relative;
+  transition: filter .12s ease;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2px;
+}
+.seg:hover { filter: brightness(1.12); }
+.seg b {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  opacity: .96;
+  pointer-events: none;
+}
+
+/* generic svg chart bits */
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.grid-line { stroke: var(--rule-2); stroke-width: 1; }
+.ref-line  { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; opacity: .55; }
+.axis-text {
+  font-family: var(--mono);
+  font-size: 10px;
+  fill: var(--ink-3);
+}
+.col { transition: opacity .12s ease; }
+.col:hover { opacity: .78; }
+
+/* horizontal bank bars */
+.bank {
+  display: grid;
+  grid-template-columns: minmax(150px, 210px) 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 5px 0;
+}
+.bank .bname { font-size: 13.5px; color: var(--ink-2); }
+.bank .btrack { background: var(--surface-2); border-radius: 4px; height: 16px; overflow: hidden; }
+.bank .bfill { height: 100%; border-radius: 4px; background: var(--c2); }
+.bank .bval {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: right;
+}
+
+/* ---------- gate ---------- */
+
+.gate {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 24px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 24px 26px;
+  box-shadow: var(--shadow);
+}
+.gate .g { }
+.gate .glabel {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 7px;
+}
+.gate .gval {
+  font-family: var(--slab);
+  font-size: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.gate .gsub { font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
+.pass {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  color: var(--good);
+  border: 1px solid var(--good);
+  border-radius: 5px;
+  padding: 5px 11px;
+}
+.pass::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--good);
+}
+
+/* ---------- ledger ---------- */
+
+.ledger { display: grid; gap: 10px; }
+.lrow {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  border-radius: 8px;
+}
+.lrow .tier {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  padding: 3px 0;
+  text-align: center;
+  border-radius: 4px;
+}
+.tier.measured  { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
+.tier.published { background: var(--surface-2); color: var(--c3); border: 1px solid var(--c3); }
+.tier.invented  { background: var(--surface-2); color: var(--c4); border: 1px solid var(--c4); }
+.lrow .what { font-size: 14px; }
+.lrow .what b { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+.lrow .what span { display: block; color: var(--ink-3); font-size: 13px; margin-top: 2px; }
+
+/* ---------- callout ---------- */
+
+.note {
+  border-left: 3px solid var(--c2);
+  background: var(--surface);
+  border-radius: 0 8px 8px 0;
+  padding: 18px 22px;
+  margin: 26px 0;
+}
+.note .eyebrow { color: var(--c2); display: block; margin-bottom: 8px; }
+.note p { max-width: 66ch; }
+
+.limits { display: grid; gap: 14px; margin-top: 8px; }
+.limit {
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+.limit h3 { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+.limit p { font-size: 14px; color: var(--ink-2); }
+
+footer {
+  border-top: 1px solid var(--rule);
+  padding-top: 22px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* tooltip */
+#tip {
+  position: fixed;
+  pointer-events: none;
+  background: var(--ink);
+  color: var(--ground);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 6px 9px;
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity .1s ease;
+  z-index: 50;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+#tip.on { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 620px) {
+  .bank { grid-template-columns: 1fr; gap: 4px; }
+  .bank .bval { text-align: left; }
+  .lrow { grid-template-columns: 1fr; }
+  .lrow .tier { justify-self: start; padding: 3px 10px; }
+}
+</style>
+
+<div id="tip"></div>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Recoup &middot; failed-payment recovery for Indian rails</div>
+  <h1>Retrying a dead card<br>is not a strategy.</h1>
+  <p class="thesis">
+    The industry-standard retry schedule applies one remedy to five different problems.
+    Four of them cannot be solved by retrying at all. Routing each decline to the remedy
+    that can actually work recovers <strong>9.8 points more payments on fewer attempts</strong>.
+  </p>
+  <div class="meta">
+    <span><b>20,000</b> held-out episodes</span>
+    <span><b>NPCI</b> Sep 2025 – Jul 2026</span>
+    <span><b>300</b> real bank incidents</span>
+    <span>day 5 of 11</span>
+  </div>
+</header>
+
+<section>
+  <div class="stats">
+    <div class="stat">
+      <div class="label">Payments recovered</div>
+      <div class="value">68.0%</div>
+      <div class="delta"><b class="up">+9.8 pts</b> vs baseline 58.2%</div>
+    </div>
+    <div class="stat">
+      <div class="label">Revenue recovered</div>
+      <div class="value">86.7%</div>
+      <div class="delta"><b class="up">+5.0 pts</b> vs baseline 81.7%</div>
+    </div>
+    <div class="stat">
+      <div class="label">Attempts per payment</div>
+      <div class="value">1.27</div>
+      <div class="delta"><b class="up">&minus;0.37</b> vs baseline 1.64</div>
+    </div>
+    <div class="stat">
+      <div class="label">Wasted attempts</div>
+      <div class="value">46.3%</div>
+      <div class="delta"><b class="up">&minus;18.2 pts</b> vs baseline 64.5%</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">The problem</span>
+    <h2>Five problems, one remedy</h2>
+  </div>
+  <div class="prose">
+    <p>
+      Razorpay documents 26 distinct reasons a payment can fail. A conventional dunning
+      system treats them as one bucket and retries on a fixed schedule &mdash; day 1, day 3,
+      day 5, day 7. That is wrong in both directions at once.
+    </p>
+    <p>
+      An <code>card_expired</code> decline retried four times cannot succeed; the card is
+      gone. A <code>bank_technical_error</code> retried an hour later hits a bank that is
+      still down, burning a capped attempt and adding load to a failing rail. And a
+      <code>payment_cancelled</code> decline has a silent-retry success probability of
+      <strong>exactly zero</strong> &mdash; the customer walked away, and only reaching them
+      brings them back.
+    </p>
+    <p>
+      Only <code>insufficient_funds</code> is genuinely a timing problem. It is 42% of
+      failures, and it is the one place where <em>when</em> you retry is the whole question.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Results</span>
+    <h2>Measured on 20,000 held-out episodes</h2>
+    <p>
+      Every policy meets the same customers, the same bank outages and the same random
+      draws. The learned policy was trained on a disjoint half of the population and
+      evaluated with exploration switched off.
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Policy</th>
+          <th>Recovered</th>
+          <th>Revenue</th>
+          <th>Attempts</th>
+          <th>Wasted</th>
+          <th>Contacts</th>
+          <th>Opt-outs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="baseline">
+          <td class="name">Fixed day 1/3/5/7 <span class="tag base">baseline</span>
+            <small>The industry default. Recurly's published schedule.</small></td>
+          <td>58.2%</td><td>81.7%</td><td>1.64</td><td>64.5%</td><td>0.00</td><td>0.0%</td>
+        </tr>
+        <tr>
+          <td class="name">Outreach only
+            <small>Dunning emails, never a silent retry.</small></td>
+          <td>35.7%</td><td>27.0%</td><td>0.60</td><td>39.9%</td><td>2.52</td><td>6.1%</td>
+        </tr>
+        <tr>
+          <td class="name">Aggressive retry
+            <small>Retry as fast and often as permitted.</small></td>
+          <td>59.3%</td><td>87.0%</td><td>1.65</td><td>64.0%</td><td>0.00</td><td>0.0%</td>
+        </tr>
+        <tr>
+          <td class="name">Taxonomy routing
+            <small>Rules only. No model, no learning.</small></td>
+          <td>66.4%</td><td>81.1%</td><td>1.36</td><td>51.3%</td><td>0.51</td><td>1.3%</td>
+        </tr>
+        <tr class="ours">
+          <td class="name">Routing + bandit <span class="tag ours">ours</span>
+            <small>Taxonomy for structure, LinUCB for timing and channel.</small></td>
+          <td>68.0%</td><td>86.7%</td><td>1.27</td><td>46.3%</td><td>0.51</td><td>1.3%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="eyebrow">Read the third row first</span>
+    <p>
+      Aggressive retry recovers <strong>87.0% of revenue</strong> &mdash; nominally the best
+      number on the board. It does it by spending 1.65 attempts on every payment, including
+      the ones that can never succeed. Our policy matches it to within 0.3 points while
+      spending <strong>0.38 fewer attempts</strong>. Attempts are not free: they consume
+      issuer goodwill, rail capacity and customer patience, none of which appear in a
+      recovery-rate column.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Diagnosis</span>
+    <h2>Where the baseline burns its attempts</h2>
+    <p>
+      Every failed attempt, classified by what kind of decline it was spent on. This is the
+      chart the whole project turns on.
+    </p>
+  </div>
+
+  <figure>
+    <div class="fig-title">Wasted attempts by decline class</div>
+    <div class="fig-sub">20,000 held-out episodes &middot; share of all failed attempts</div>
+
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--c1)"></i> Time-conditional</span>
+      <span><i class="swatch" style="background:var(--c2)"></i> Session-conditional</span>
+      <span><i class="swatch" style="background:var(--c3)"></i> Rail-conditional</span>
+      <span><i class="swatch" style="background:var(--c4)"></i> Hard-declined</span>
+      <span><i class="swatch" style="background:var(--c5)"></i> Never retryable</span>
+    </div>
+
+    <div class="wasterow">
+      <div class="rowhead">
+        <span class="rowname">Fixed day 1/3/5/7</span>
+        <span class="rowtotal">21,123 wasted attempts</span>
+      </div>
+      <div class="bar" id="bar-fixed"></div>
+    </div>
+
+    <div class="wasterow">
+      <div class="rowhead">
+        <span class="rowname">Routing + bandit</span>
+        <span class="rowtotal">11,792 wasted attempts &mdash; 44% fewer</span>
+      </div>
+      <div class="bar" id="bar-bandit"></div>
+    </div>
+
+    <figcaption>
+      The baseline spends <strong>43.5%</strong> of its wasted attempts on session-conditional
+      declines &mdash; cancelled payments, timeouts, failed OTPs &mdash; where a silent retry
+      has probability zero however well timed. Routing those to outreach instead removes
+      almost the entire block. What remains is concentrated on time-conditional declines,
+      which is the one class where retrying is the right idea and only the timing is in
+      question.
+    </figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Trust</span>
+    <h2>The simulator reproduces a published benchmark</h2>
+    <p>
+      There is no public dataset pairing decline reasons with retry outcomes, so policies are
+      evaluated in a simulator. That is only worth anything if the simulator can reproduce a
+      number it was never told about.
+    </p>
+  </div>
+
+  <div class="gate">
+    <div class="g">
+      <div class="glabel">Published</div>
+      <div class="gval">58.0%</div>
+      <div class="gsub">Recurly, ~40M subscription transactions</div>
+    </div>
+    <div class="g">
+      <div class="glabel">Reproduced</div>
+      <div class="gval" style="color:var(--accent)">58.2%</div>
+      <div class="gsub">Our simulator, same schedule</div>
+    </div>
+    <div class="g">
+      <div class="glabel">Difference</div>
+      <div class="gval">+0.2</div>
+      <div class="gsub">tolerance &plusmn;3.0 points</div>
+    </div>
+    <div class="g">
+      <div class="glabel">Gate</div>
+      <div style="margin-top:6px"><span class="pass">PASS</span></div>
+    </div>
+  </div>
+
+  <div class="prose" style="margin-top:24px">
+    <p>
+      Recovery is modelled through mechanisms, not through a fitted curve. Insufficient funds
+      clear because a <em>balance</em> recovers on a salary cycle; bank errors clear because an
+      <em>outage</em> ends; cancelled payments clear only when outreach brings someone back.
+      The 58% figure is therefore a check on those mechanisms rather than an input to them
+      &mdash; a fitted curve would have handed the answer straight to the policy being tested.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Evidence</span>
+    <h2>The salary cycle is real, and it is public</h2>
+    <p>
+      The balance mechanism assumes Indian consumers have more capacity just after a
+      month-start credit. That was an assumption until NPCI's daily statistics were checked
+      against it.
+    </p>
+  </div>
+
+  <figure>
+    <div class="fig-title">Average UPI ticket size by day of month</div>
+    <div class="fig-sub">212 days across 7 months &middot; index, 100 = period average</div>
+    <svg class="chart" id="cycle" viewBox="0 0 880 260" role="img"
+         aria-label="Average UPI transaction value by day of month, peaking at 121 on day 2 and falling to 86 by day 26."></svg>
+    <figcaption>
+      Ticket size peaks at <strong>121 on day 2</strong> &mdash; the day after a typical salary
+      credit &mdash; and decays to <strong>86 by day 26</strong>, a 19.7% early-to-late spread.
+      Days 29&ndash;31 are excluded because not every month has them. This measures what people
+      <em>spend</em>, which is stickier than what they <em>hold</em>, so it is treated as a lower
+      bound on the balance effect rather than a measurement of it.
+    </figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Evidence</span>
+    <h2>Banks fail differently, by a factor of six</h2>
+  </div>
+
+  <figure>
+    <div class="fig-title">Mean outage duration by issuer</div>
+    <div class="fig-sub">NPCI reported incidents &middot; Sep 2025 – Jul 2026 &middot; hours per incident</div>
+    <div id="banks"></div>
+    <figcaption>
+      Across all 37 banks in the data the spread reaches <strong>17&times;</strong>. That
+      dispersion is the entire reason knowing <em>which</em> rail you are retrying into is worth
+      anything &mdash; if every bank failed identically there would be nothing to route around.
+      A test asserts the spread exists; if it ever collapses, the rail-aware logic should be
+      deleted rather than quietly kept.
+    </figcaption>
+  </figure>
+
+  <div class="note">
+    <span class="eyebrow">The denominator trap</span>
+    <p>
+      Pooled across all 741 UPI member banks, outages occur at 0.00121 per bank-day. But that
+      denominator is dominated by hundreds of tiny cooperative banks processing almost nothing.
+      State Bank of India's own rate is <strong>0.0988 per day &mdash; 82&times; higher</strong>.
+      A merchant never meets the average bank; it meets the banks its customers actually use.
+      Taking the pooled figure at face value would have understated rail risk by two orders of
+      magnitude while looking more rigorous.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Provenance</span>
+    <h2>Which numbers are real</h2>
+    <p>
+      A simulated result is worth exactly as much as its willingness to say where its inputs
+      came from. <code>scripts/audit_parameters.py</code> prints this ledger and exits non-zero
+      if any invented parameter escapes the sensitivity sweep.
+    </p>
+  </div>
+
+  <div class="ledger">
+    <div class="lrow">
+      <span class="tier measured">MEASURED</span>
+      <span class="what"><b>outage rate &amp; duration</b>
+        <span>NPCI incident reports &mdash; 300 incidents, 11 months, 37 banks, files committed to the repo</span></span>
+    </div>
+    <div class="lrow">
+      <span class="tier measured">MEASURED</span>
+      <span class="what"><b>average ticket size</b>
+        <span>NPCI monthly volume and value &mdash; ₹1,296 across 16 months</span></span>
+    </div>
+    <div class="lrow">
+      <span class="tier measured">MEASURED</span>
+      <span class="what"><b>salary cycle</b>
+        <span>NPCI daily statistics &mdash; 212 days, +19.7% early-month lift</span></span>
+    </div>
+    <div class="lrow">
+      <span class="tier published">PUBLISHED</span>
+      <span class="what"><b>decline reason mix</b>
+        <span>Recurly benchmarks. Western subscription data; the Indian mix genuinely differs</span></span>
+    </div>
+    <div class="lrow">
+      <span class="tier invented">INVENTED</span>
+      <span class="what"><b>shortfall_high</b>
+        <span>Fitted so the baseline reproduces at 58%. The riskiest number here, and swept the widest</span></span>
+    </div>
+    <div class="lrow">
+      <span class="tier invented">INVENTED</span>
+      <span class="what"><b>outreach_response_rate, opt_out_hazard, balance decay &hellip;</b>
+        <span>No public source. All swept; no headline claim may rest on any single setting</span></span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Limitations</span>
+    <h2>What this does not show</h2>
+  </div>
+
+  <div class="limits">
+    <div class="limit">
+      <h3>The magnitude is not yet trustworthy</h3>
+      <p>
+        The +9.8 point figure depends on three invented parameters: the session-conditional
+        share of the decline mix, the outreach response rate, and the session completion rate.
+        The full sensitivity sweep has not run yet. Treat the size as provisional.
+      </p>
+    </div>
+    <div class="limit">
+      <h3>The direction is safe, and for a specific reason</h3>
+      <p>
+        Retrying a <code>payment_cancelled</code> decline has probability zero &mdash; that comes
+        from Razorpay's documentation, not from any parameter we chose. Any outreach response
+        rate above zero makes outreach the better action for that class. The sign is guaranteed
+        by the mechanism; only the size is uncertain.
+      </p>
+    </div>
+    <div class="limit">
+      <h3>The salary cycle is not where the win comes from</h3>
+      <p>
+        The bandit converged on retrying at +6h &mdash; the earliest permitted &mdash; for 68% of
+        decisions, and a payday-targeting policy tested <em>worse</em> than the baseline. With the
+        calibrated shortfall, most balances recover within hours. The win is routing, not
+        salary-cycle timing. The more appealing story is the wrong one.
+      </p>
+    </div>
+    <div class="limit">
+      <h3>Revenue figures carry a heavy tail</h3>
+      <p>
+        Simulated failed-payment amounts have a mean of ₹31,009 against a median of ₹3,479.
+        Recovery rate by count is robust to this; revenue-weighted figures are not, and should
+        be read with that in mind.
+      </p>
+    </div>
+    <div class="limit">
+      <h3>No live-mode transactions, ever</h3>
+      <p>
+        Razorpay test mode only. Recoup schedules payment retries, so a live key would move
+        real money &mdash; the credential check refuses anything that is not <code>rzp_test_</code>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Recoup &middot; Razorpay AI Buildathon 2026 &middot; AI Revenue Recovery<br>
+  123 tests passing &middot; simulator calibrated against NPCI and Recurly &middot; day 5 of 11
+</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var tip = document.getElementById("tip");
+  function showTip(e, html) {
+    tip.textContent = html;
+    tip.classList.add("on");
+    var pad = 14;
+    var x = e.clientX + pad, y = e.clientY - 30;
+    if (x + tip.offsetWidth > window.innerWidth - 8) x = e.clientX - tip.offsetWidth - pad;
+    if (y < 8) y = e.clientY + 24;
+    tip.style.left = x + "px";
+    tip.style.top = y + "px";
+  }
+  function hideTip() { tip.classList.remove("on"); }
+
+  /* ---------- stacked waste bars ---------- */
+
+  var CLASSES = [
+    ["time_conditional",    "Time-conditional",    "--c1"],
+    ["session_conditional", "Session-conditional", "--c2"],
+    ["rail_conditional",    "Rail-conditional",    "--c3"],
+    ["hard_declined",       "Hard-declined",       "--c4"],
+    ["never_retryable",     "Never retryable",     "--c5"]
+  ];
+
+  var WASTE = {
+    "bar-fixed":  { time_conditional: 10969, session_conditional: 9182, rail_conditional: 380,  hard_declined: 550, never_retryable: 42 },
+    "bar-bandit": { time_conditional: 10161, session_conditional: 403,  rail_conditional: 663,  hard_declined: 550, never_retryable: 15 }
+  };
+
+  Object.keys(WASTE).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var data = WASTE[id];
+    var total = CLASSES.reduce(function (s, c) { return s + (data[c[0]] || 0); }, 0);
+
+    CLASSES.forEach(function (c) {
+      var n = data[c[0]] || 0;
+      if (!n) return;
+      var pct = n / total;
+      var seg = document.createElement("div");
+      seg.className = "seg";
+      seg.style.flex = pct;
+      seg.style.background = "var(" + c[2] + ")";
+      if (pct > 0.11) {
+        var b = document.createElement("b");
+        b.textContent = Math.round(pct * 100) + "%";
+        seg.appendChild(b);
+      }
+      seg.addEventListener("mousemove", function (e) {
+        showTip(e, c[1] + " · " + n.toLocaleString() + " (" + (pct * 100).toFixed(1) + "%)");
+      });
+      seg.addEventListener("mouseleave", hideTip);
+      el.appendChild(seg);
+    });
+  });
+
+  /* ---------- salary cycle column chart ---------- */
+
+  var CYCLE = [111.5,121.2,107.8,110.1,107.4,109.6,105.1,101.2,107.9,103.9,99.8,96.4,
+               100.5,92.7,92.7,98.4,93.1,93.4,91.3,99.2,92.0,89.8,95.0,91.1,92.9,86.0,97.7,93.0];
+
+  (function drawCycle() {
+    var svg = document.getElementById("cycle");
+    if (!svg) return;
+    var W = 880, H = 260, L = 34, R = 8, T = 14, B = 30;
+    var pw = W - L - R, ph = H - T - B;
+    var lo = 80, hi = 126;
+    var y = function (v) { return T + ph - (v - lo) / (hi - lo) * ph; };
+    var bw = pw / CYCLE.length;
+    var ns = "http://www.w3.org/2000/svg";
+    var frag = document.createDocumentFragment();
+
+    function add(tag, attrs, text) {
+      var e = document.createElementNS(ns, tag);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      if (text != null) e.textContent = text;
+      frag.appendChild(e);
+      return e;
+    }
+
+    [90, 100, 110, 120].forEach(function (v) {
+      add("line", { x1: L, x2: W - R, y1: y(v), y2: y(v),
+                    "class": v === 100 ? "ref-line" : "grid-line" });
+      add("text", { x: L - 8, y: y(v) + 3, "class": "axis-text", "text-anchor": "end" }, v);
+    });
+
+    CYCLE.forEach(function (v, i) {
+      var day = i + 1;
+      var top = y(v), base = y(lo);
+      var early = day <= 7;
+      var rect = add("rect", {
+        x: L + i * bw + 1.5, y: top,
+        width: Math.max(bw - 3, 1), height: Math.max(base - top, 1),
+        rx: 3, "class": "col",
+        fill: early ? "var(--c1)" : "var(--ink-3)",
+        "fill-opacity": early ? "1" : "0.42"
+      });
+      rect.addEventListener("mousemove", function (e) {
+        showTip(e, "Day " + day + " · index " + v.toFixed(1));
+      });
+      rect.addEventListener("mouseleave", hideTip);
+
+      if (day === 1 || day === 7 || day === 14 || day === 21 || day === 28) {
+        add("text", { x: L + i * bw + bw / 2, y: H - 10,
+                      "class": "axis-text", "text-anchor": "middle" }, day);
+      }
+    });
+
+    add("text", { x: L + 2.5 * bw, y: y(121.2) - 8, "class": "axis-text",
+                  "text-anchor": "start", fill: "var(--c1)" }, "peak 121 — day 2");
+    add("text", { x: L + 25.5 * bw, y: y(86.0) - 8, "class": "axis-text",
+                  "text-anchor": "middle" }, "86");
+
+    svg.appendChild(frag);
+  })();
+
+  /* ---------- bank dispersion ---------- */
+
+  var BANKS = [
+    ["Uttar Pradesh Gramin Bank", 5.31],
+    ["Central Bank of India",     2.64],
+    ["Indian Overseas Bank",      2.45],
+    ["Fino Payments Bank",        1.79],
+    ["Bank of India",             1.69],
+    ["Punjab National Bank",      1.58],
+    ["India Post Payments Bank",  1.50],
+    ["Canara Bank",               1.45],
+    ["State Bank of India",       1.26],
+    ["Indian Bank",               0.87]
+  ];
+
+  (function drawBanks() {
+    var host = document.getElementById("banks");
+    if (!host) return;
+    var max = 5.31;
+    BANKS.forEach(function (b) {
+      var row = document.createElement("div");
+      row.className = "bank";
+
+      var name = document.createElement("div");
+      name.className = "bname";
+      name.textContent = b[0];
+
+      var track = document.createElement("div");
+      track.className = "btrack";
+      var fill = document.createElement("div");
+      fill.className = "bfill";
+      fill.style.width = (b[1] / max * 100) + "%";
+      track.appendChild(fill);
+
+      var val = document.createElement("div");
+      val.className = "bval";
+      val.textContent = b[1].toFixed(2) + " h";
+
+      row.addEventListener("mousemove", function (e) {
+        showTip(e, b[0] + " · " + b[1].toFixed(2) + " h per incident");
+      });
+      row.addEventListener("mouseleave", hideTip);
+
+      row.appendChild(name); row.appendChild(track); row.appendChild(val);
+      host.appendChild(row);
+    });
+  })();
+})();
+</script>

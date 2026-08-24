@@ -19,6 +19,7 @@ from typing import Protocol
 
 import numpy as np
 
+from recoup.guardrails import Guardrails, idempotency_key
 from recoup.sim.entities import (
     HOURS_PER_DAY,
     Attempt,
@@ -243,9 +244,16 @@ def run_episode(
     rails: RailHealth,
     params: SimParams,
     rng: np.random.Generator,
+    guardrails: Guardrails | None = None,
 ) -> EpisodeResult:
-    """Play one failed payment forward under ``policy``."""
+    """Play one failed payment forward under ``policy``.
+
+    Every action the policy proposes is checked by ``guardrails`` before it executes. A
+    fresh set is created per episode when none is supplied; passing one in lets a caller
+    inspect exactly which rules fired, which is what the audit trail is built from.
+    """
     horizon_hours = params.horizon_days * HOURS_PER_DAY
+    guards = guardrails if guardrails is not None else Guardrails()
 
     elapsed = 0.0
     attempts: list[Attempt] = []
@@ -284,21 +292,28 @@ def run_episode(
         elapsed = target
 
         if action.kind is ActionKind.RETRY:
-            reason = lookup(current_code)
-            if len(attempts) >= reason.max_attempts:
-                # Structural refusal. The cap belongs to the decline reason, not to the
-                # policy's discretion, so asking again cannot change the answer.
-                # See docs/DECISIONS.md ADR-007.
+            instrument = _resolve_instrument(
+                customer, action.instrument_id or current_instrument_id
+            )
+            key = idempotency_key(payment.id, len(attempts), instrument.id)
+
+            verdict = guards.check_retry(
+                key=key,
+                attempts_made=len(attempts),
+                decline_code=current_code,
+                instrument_expired=instrument.is_expired_at(elapsed),
+            )
+            if not verdict.allowed:
+                # The guardrail layer decides, not the policy. Asking again cannot change
+                # the answer. See docs/DECISIONS.md ADR-007.
                 refused += 1
                 consecutive_refusals += 1
                 if consecutive_refusals >= MAX_CONSECUTIVE_REFUSALS:
                     break
                 continue
 
-            instrument = _resolve_instrument(
-                customer, action.instrument_id or current_instrument_id
-            )
             current_instrument_id = instrument.id
+            guards.record_charge(key)
 
             attempt = outcomes.resolve(
                 payment=payment,
@@ -331,9 +346,23 @@ def run_episode(
             in_session = False
 
         elif action.kind is ActionKind.OUTREACH:
-            if opted_out:
-                # Contacting a customer who has opted out is not a judgement call the
-                # policy gets to make. Structural refusal, same as an exceeded cap.
+            window = params.horizon_days * HOURS_PER_DAY
+            verdict = guards.check_outreach(
+                hour_of_day=payment.hour_of_day_at(elapsed),
+                opted_out=opted_out,
+                contacts_in_window=sum(
+                    1 for c in contacts if elapsed - guards.contact_window_hours <= c.at_hours
+                ),
+            )
+
+            if verdict.deferred and verdict.defer_hours is not None:
+                # Badly timed, not forbidden. Waiting until morning is the right answer;
+                # dropping the message would lose a recovery to a clock.
+                deferred_to = elapsed + verdict.defer_hours
+                if deferred_to > window:
+                    break
+                elapsed = deferred_to
+            elif not verdict.allowed:
                 refused += 1
                 consecutive_refusals += 1
                 if consecutive_refusals >= MAX_CONSECUTIVE_REFUSALS:
