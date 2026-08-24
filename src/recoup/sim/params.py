@@ -95,9 +95,21 @@ class SimParams:
     n_customers: int = 10_000
     seed: int = 0
 
-    # Transaction amounts, in paise. Log-normal is the standard shape for payment
-    # amounts. SWEPT: the specific parameters are not published for Indian e-commerce.
-    amount_log_mean: float = 7.5
+    # Transaction amounts, in rupees before conversion to paise. Log-normal is the
+    # standard shape for payment amounts.
+    #
+    # T1 on the mean: NPCI's published monthly volume and value give an average UPI ticket
+    # of Rs 1,296 over 16 months (Aug 2025 - Jul 2026), and amount_log_mean is set so the
+    # distribution reproduces it. The previous invented value of 7.5 implied Rs 3,306 --
+    # 2.6x too high, which inflated every revenue figure computed from it.
+    #
+    # SWEPT on the spread: NPCI publishes the mean but not the distribution, so sigma
+    # remains an assumption.
+    #
+    # Stated limitation: this is the average across *all* UPI transactions, not across
+    # *failed* ones. If failures skew large, this understates them. Anchoring to a
+    # published mean is still better than an invented value off by 2.6x.
+    amount_log_mean: float = 6.5620
     amount_log_sigma: float = 1.1
 
     # --- Decline mix -----------------------------------------------------------------
@@ -110,6 +122,10 @@ class SimParams:
     # Salary credit timing is the one piece with a real-world anchor: Indian salaries
     # cluster at month end and the first working days of the month. That is why the
     # policy can learn to wait for a payday rather than retrying blindly.
+    # The salary cycle is no longer an assumption. NPCI's daily statistics over 212 days
+    # show average UPI ticket size peaking at index 121 on day 2 of the month and falling
+    # to 86 by day 26 -- a +19.7% early-vs-late lift. The mechanism the time-conditional
+    # recovery signal depends on is empirically present in real payment behaviour.
     salary_day_of_month: int = 1
     salary_day_jitter: int = 3
 
@@ -206,5 +222,49 @@ SWEPT_PARAMETERS: dict[str, SweepRange] = {
         0.05,
         "Frequency of bank outages. Together with duration this sets how much a "
         "rail-aware policy can win.",
+    ),
+    "shortfall_high": SweepRange(
+        1.2,
+        3.0,
+        1.5,
+        "How far a failed charge overshot the available balance. THE FITTED PARAMETER: "
+        "its default was chosen so the published Recurly baseline reproduces at 58%. "
+        "Because a headline number rests on it, it is swept the widest, and the "
+        "calibration is re-checked at every point in the range.",
+    ),
+    "shortfall_low": SweepRange(
+        1.001,
+        1.1,
+        1.01,
+        "Lower bound of the same overshoot. Near-misses are common but unmeasured.",
+    ),
+    "amount_log_sigma": SweepRange(
+        0.8,
+        1.5,
+        1.1,
+        "Spread of payment amounts. NPCI publishes the mean ticket but not the shape, "
+        "and the spread decides how much of the population sits near its balance limit.",
+    ),
+    "balance_floor_fraction": SweepRange(
+        0.01,
+        0.15,
+        0.05,
+        "Residual balance at the worst point of the salary cycle. Sets the floor on how "
+        "badly a late-cycle retry can do.",
+    ),
+    "contact_fatigue_halflife_hours": SweepRange(
+        24.0,
+        168.0,
+        72.0,
+        "How quickly customers forget being contacted. Bounds how closely outreach can "
+        "be spaced before it costs more than it recovers.",
+    ),
+    "salary_day_jitter": SweepRange(
+        0.0,
+        7.0,
+        3.0,
+        "Dispersion of salary credit dates across the population. At zero every customer "
+        "is paid on the same day, which would make the cycle far easier to exploit than "
+        "it is in reality.",
     ),
 }

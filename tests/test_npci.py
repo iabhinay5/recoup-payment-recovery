@@ -122,3 +122,36 @@ class TestRealData:
         pooled = calibrate_from_downtime(records).outage_rate_per_bank_day
         banks = banks_from_downtime(records)
         assert all(b.outage_rate_per_day > pooled * 10 for b in banks)
+
+
+class TestParameterAudit:
+    """The audit is a guarantee, not a report. It must fail when it should."""
+
+    def test_audit_passes_on_the_current_parameter_set(self) -> None:
+        from scripts.audit_parameters import main
+
+        assert main() == 0
+
+    def test_every_invented_parameter_is_swept(self) -> None:
+        """The property the audit exists to enforce.
+
+        An invented parameter left out of the sweep can silently carry a headline result,
+        which is exactly the failure mode simulation-based work is accused of.
+        """
+        from scripts.audit_parameters import LEDGER, NOT_EMPIRICAL
+
+        from recoup.sim.params import SWEPT_PARAMETERS, SimParams
+
+        for name in SimParams.__dataclass_fields__:
+            prov = LEDGER.get(name)
+            assert prov is not None, f"{name} has no provenance entry"
+            if prov.tier == "INVENTED" and name not in NOT_EMPIRICAL:
+                assert name in SWEPT_PARAMETERS, f"{name} is invented but never swept"
+
+    def test_the_fitted_parameter_is_swept_widest(self) -> None:
+        """shortfall_high was tuned to hit 58%, so it carries the most risk."""
+        from recoup.sim.params import SWEPT_PARAMETERS
+
+        fitted = SWEPT_PARAMETERS["shortfall_high"]
+        assert fitted.high / fitted.low >= 2.0, "the fitted parameter needs a wide sweep"
+        assert "FITTED" in fitted.note
