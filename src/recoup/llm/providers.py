@@ -20,11 +20,17 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from recoup.config import load_dotenv
 from recoup.llm.base import LLMRequest
 
-__all__ = ["GroqProvider", "OllamaProvider", "StubProvider"]
+__all__ = ["GroqProvider", "OllamaProvider", "StubProvider", "TruncatedResponse"]
 
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
+"""Chosen from what GET /v1/models actually returns for this account.
+
+The first attempt used a model name recalled rather than queried, and Groq answered with
+a 404. Ask the API which models exist; do not assume.
+"""
 DEFAULT_OLLAMA_MODEL = "qwen2.5:7b"
 
 
@@ -41,11 +47,38 @@ def _chat_payload(request: LLMRequest, model: str) -> dict[str, Any]:
     }
 
 
+class TruncatedResponse(RuntimeError):
+    """The model ran out of output budget before producing an answer."""
+
+
 def _extract_text(body: dict[str, Any]) -> str:
+    """Pull the answer out of an OpenAI-shaped response.
+
+    Reasoning models put their chain of thought in a separate ``reasoning`` field and the
+    answer in ``content``. If the token budget runs out during reasoning, ``content``
+    comes back as an empty string with ``finish_reason: length`` - a successful HTTP 200
+    carrying nothing. That silently degraded every short-form generation in this system
+    until it was traced back here, so it now raises instead.
+    """
     try:
-        return str(body["choices"][0]["message"]["content"])
+        choice = body["choices"][0]
+        content = str(choice["message"]["content"] or "")
     except (KeyError, IndexError, TypeError) as exc:
         raise RuntimeError(f"Unexpected response shape: {body!r}") from exc
+
+    if content.strip():
+        return content
+
+    finish = choice.get("finish_reason")
+    reasoning = str(choice.get("message", {}).get("reasoning") or "")
+    if finish == "length":
+        raise TruncatedResponse(
+            f"the model used its entire {body.get('usage', {}).get('completion_tokens', '?')}"
+            f"-token budget on reasoning and returned no answer; raise max_tokens"
+        )
+    raise RuntimeError(
+        f"empty content (finish_reason={finish!r}, {len(reasoning)} chars of reasoning present)"
+    )
 
 
 class GroqProvider:
@@ -64,6 +97,10 @@ class GroqProvider:
         model: str = DEFAULT_GROQ_MODEL,
         timeout: float = 60.0,
     ) -> None:
+        # Load .env the same way every other entry point does. Reading os.environ
+        # directly made this the one component that worked in tests and failed in scripts.
+        if api_key is None:
+            load_dotenv()
         key = api_key or os.environ.get("GROQ_API_KEY")
         if not key:
             raise ValueError(
