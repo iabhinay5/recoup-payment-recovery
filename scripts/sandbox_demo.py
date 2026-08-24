@@ -47,14 +47,22 @@ CHECKOUT_TEMPLATE = """<!doctype html>
  h1 {{ font-size:20px; margin:0 0 8px }}
  p {{ color:#8b949e; line-height:1.6; font-size:14px }}
  code {{ background:#161b22; padding:2px 6px; border-radius:4px; color:#7ee787 }}
+ ol {{ text-align:left; color:#8b949e; font-size:13.5px; line-height:1.9; padding-left:22px }}
+ li {{ margin-bottom:6px }}
  button {{ margin-top:20px; padding:12px 28px; font-size:15px; border:0; border-radius:6px;
           background:#2f81f7; color:#fff; cursor:pointer }}
 </style>
 <div class="card">
   <h1>Recoup &mdash; sandbox payment</h1>
   <p>Test mode. No real money moves.</p>
-  <p>To make this fail on purpose, choose <b>UPI</b> and enter
-     <code>failure@razorpay</code> as the UPI ID.</p>
+  <p><b>Make this fail on purpose.</b> Whichever method your account offers:</p>
+  <ol>
+    <li><b>Netbanking</b> &mdash; pick any bank, then click
+        <code>Failure</code> on the mock bank page. Needs no credentials.</li>
+    <li><b>Card</b> &mdash; any test card, any future expiry, any CVV, then enter an
+        OTP of <b>fewer than 4 digits</b> to fail authentication.</li>
+    <li><b>UPI</b> &mdash; enter <code>failure@razorpay</code> as the UPI ID.</li>
+  </ol>
   <button id="pay">Pay &#8377;{amount}</button>
 </div>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -169,7 +177,10 @@ def main() -> int:
 
     print()
     print(f"{BOLD}Opening checkout in your browser.{OFF}")
-    print(f"  Choose {BOLD}UPI{OFF} and enter {BOLD}failure@razorpay{OFF} to fail on purpose.")
+    print("  Make it fail on purpose, whichever method your account offers:")
+    print(f"    1. {BOLD}Netbanking{OFF} - any bank, then click 'Failure' on the mock page")
+    print(f"    2. {BOLD}Card{OFF} - any test card, then an OTP of fewer than 4 digits")
+    print(f"    3. {BOLD}UPI{OFF} - enter failure@razorpay")
     print(f"  {DIM}{CHECKOUT_PATH.resolve()}{OFF}")
     webbrowser.open(CHECKOUT_PATH.resolve().as_uri())
 
