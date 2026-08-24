@@ -13,6 +13,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from recoup.sim.entities import HOURS_PER_DAY, Bank, Customer, FailedPayment, Instrument
+from recoup.sim.outcomes import balance_fraction
 from recoup.sim.params import SimParams
 from recoup.taxonomy import PaymentMethod
 
@@ -104,6 +105,43 @@ def _make_instruments(
     return tuple(instruments)
 
 
+def _amount_for(
+    code: str,
+    params: SimParams,
+    customer: Customer,
+    reference_day: int,
+    rng: np.random.Generator,
+) -> int:
+    """Sample a payment amount consistent with the decline reason that was observed.
+
+    This is an inference, not an assumption, and it is the correction that makes retry
+    *timing* mean anything at all.
+
+    Sampling the amount independently of the decline reason quietly destroys the problem.
+    A payment that failed for ``insufficient_funds`` tells you something specific: at that
+    moment, the customer's available balance was **below** the amount. Draw the amount
+    from a general distribution and most such payments end up trivially affordable — the
+    charge then clears on the first retry regardless of when it lands, timing carries no
+    signal, and every policy scores identically.
+
+    The same reasoning applies to ``transaction_limit_exceeded``, which likewise implies a
+    charge large relative to what the customer's limit currently permits.
+    """
+    if code in ("insufficient_funds", "transaction_limit_exceeded"):
+        fraction = balance_fraction(
+            reference_day,
+            customer.salary_day_of_month,
+            params.balance_depletion_rate,
+            params.balance_floor_fraction,
+        )
+        available = fraction * customer.monthly_income_paise
+        shortfall = float(rng.uniform(params.shortfall_low, params.shortfall_high))
+        return max(100, int(available * shortfall))
+
+    amount = int(rng.lognormal(params.amount_log_mean, params.amount_log_sigma) * 100)
+    return max(100, amount)
+
+
 def generate_population(params: SimParams) -> Population:
     """Generate banks, customers, instruments, and one failed payment per customer."""
     rng = np.random.default_rng(params.seed)
@@ -166,15 +204,17 @@ def generate_population(params: SimParams) -> Population:
         )
         customers.append(customer)
 
-        amount = int(rng.lognormal(params.amount_log_mean, params.amount_log_sigma) * 100)
+        reference_day = int(rng.integers(1, 29))
+        amount = _amount_for(code, params, customer, reference_day, rng)
+
         payments.append(
             FailedPayment(
                 id=f"pay_{i}",
                 customer_id=customer.id,
                 instrument_id=instruments[0].id,
-                amount_paise=max(100, amount),
+                amount_paise=amount,
                 initial_decline_code=code,
-                reference_day_of_month=int(rng.integers(1, 29)),
+                reference_day_of_month=reference_day,
                 reference_hour_of_day=float(rng.uniform(0.0, 24.0)),
             )
         )

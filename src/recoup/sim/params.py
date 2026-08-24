@@ -112,6 +112,14 @@ class SimParams:
     # policy can learn to wait for a payday rather than retrying blindly.
     salary_day_of_month: int = 1
     salary_day_jitter: int = 3
+
+    # How far above the customer's available balance an insufficient-funds charge sat at
+    # the moment it failed. CALIBRATED: the upper bound was fitted so that the published
+    # Recurly Day-1/3/5/7 baseline reproduces at 58%. It is the one parameter in this file
+    # tuned to hit a target rather than sampled from a source, and it is therefore the
+    # first thing the sensitivity analysis varies.
+    shortfall_low: float = 1.01
+    shortfall_high: float = 1.5
     # Fraction of a customer's monthly income still available, by day of the salary
     # cycle. Balance falls through the month and is replenished at the credit.
     balance_floor_fraction: float = 0.05

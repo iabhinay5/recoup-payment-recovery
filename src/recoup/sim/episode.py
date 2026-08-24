@@ -50,6 +50,18 @@ otherwise spin forever. Hitting this bound indicates a policy bug, so it is surf
 the result rather than silently swallowed.
 """
 
+MAX_CONSECUTIVE_REFUSALS = 3
+"""How many refusals in a row end the episode.
+
+A refusal does not change the state that caused it — an exhausted attempt cap stays
+exhausted until an attempt runs, and an attempt cannot run while the cap is exhausted. So
+a policy that keeps asking gets the same answer forever.
+
+The bound is not 1, because a policy is allowed to pivot: having a retry refused and then
+trying outreach instead is reasonable behaviour, not a bug. Repeating the *same* refused
+request is what this stops.
+"""
+
 
 class ActionKind(Enum):
     RETRY = "retry"
@@ -231,6 +243,7 @@ def run_episode(
     in_session = False
     opted_out = customer.opted_out
     refused = 0
+    consecutive_refusals = 0
 
     for _ in range(MAX_ACTIONS_PER_EPISODE):
         state = EpisodeState(
@@ -265,6 +278,9 @@ def run_episode(
                 # policy's discretion, so asking again cannot change the answer.
                 # See docs/DECISIONS.md ADR-007.
                 refused += 1
+                consecutive_refusals += 1
+                if consecutive_refusals >= MAX_CONSECUTIVE_REFUSALS:
+                    break
                 continue
 
             instrument = _resolve_instrument(
@@ -282,6 +298,7 @@ def run_episode(
                 rng=rng,
             )
             attempts.append(attempt)
+            consecutive_refusals = 0
 
             if attempt.succeeded:
                 return EpisodeResult(
@@ -305,9 +322,13 @@ def run_episode(
                 # Contacting a customer who has opted out is not a judgement call the
                 # policy gets to make. Structural refusal, same as an exceeded cap.
                 refused += 1
+                consecutive_refusals += 1
+                if consecutive_refusals >= MAX_CONSECUTIVE_REFUSALS:
+                    break
                 continue
 
             contacts.append(Contact(elapsed, action.channel or ContactChannel.EMAIL))
+            consecutive_refusals = 0
 
             channel = action.channel or ContactChannel.EMAIL
             hazard = params.opt_out_hazard_per_contact * channel.intrusiveness

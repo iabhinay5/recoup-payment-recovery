@@ -139,3 +139,18 @@ class RailHealth:
         return (
             math.fsum(self.health_at(bank_id, start + i * step) for i in range(samples)) / samples
         )
+
+    def with_outage(self, outage: Outage) -> RailHealth:
+        """Return a copy with one additional outage.
+
+        Used to make an episode's rail state consistent with the failure that opened it:
+        a payment that failed with ``bank_technical_error`` must have failed *during* an
+        outage, otherwise the episode contradicts its own premise and a rail-aware policy
+        is being asked to react to a problem that was never there.
+
+        Episode-local rather than global because every episode measures time from its own
+        failure, so one shared outage timeline cannot be simultaneously consistent with
+        all of them.
+        """
+        merged = tuple(o for outages in self._by_bank.values() for o in outages) + (outage,)
+        return RailHealth(dict(self._banks), merged, self._degraded)

@@ -27,7 +27,7 @@ from recoup.sim import (
     generate_population,
     run_episode,
 )
-from recoup.sim.episode import EpisodeState
+from recoup.sim.episode import MAX_CONSECUTIVE_REFUSALS, EpisodeState
 from recoup.sim.outcomes import affordability_success_probability
 from recoup.taxonomy import PaymentMethod
 
@@ -276,8 +276,10 @@ class TestEpisodeRunner:
         result = run_episode(payment, customer, policy, model, rails, params, _rng())
 
         assert result.attempt_count == 0, "no attempt may run against a zero-cap reason"
-        assert result.refused_actions == 10
         assert not result.recovered
+        # The episode ends once the same refusal repeats: an exhausted cap cannot be
+        # un-exhausted without an attempt, and an attempt cannot run while it is exhausted.
+        assert result.refused_actions == MAX_CONSECUTIVE_REFUSALS
 
     def test_horizon_stops_the_episode(
         self, params: SimParams, payment: FailedPayment, customer: Customer
@@ -305,7 +307,7 @@ class TestEpisodeRunner:
         result = run_episode(payment, opted_out, policy, model, rails, params, _rng())
 
         assert result.contact_count == 0
-        assert result.refused_actions == 5
+        assert result.refused_actions == MAX_CONSECUTIVE_REFUSALS
 
     def test_successful_attempt_records_revenue_and_time(
         self, params: SimParams, customer: Customer
@@ -334,21 +336,52 @@ class TestEpisodeRunner:
         assert not hasattr(state, "outcomes")
         assert hasattr(state, "rails"), "rail health is queryable, as a Downtime API would be"
 
-    def test_action_limit_is_surfaced_not_swallowed(
+    def test_repeated_refusal_ends_the_episode(
         self, params: SimParams, payment: FailedPayment, customer: Customer
     ) -> None:
-        from recoup.sim.episode import MAX_ACTIONS_PER_EPISODE
+        """A policy that keeps asking for a refused action does not spin.
 
+        Before this bound existed, 35% of episodes burned the full action budget on
+        refusals, which both wasted time and masked what the policy was really doing.
+        """
         model, rails = self._model(params)
-        # Zero-delay outreach on an opted-out customer is refused forever.
         opted_out = Customer(
             "c1", (Instrument("i1", PaymentMethod.CARD, "hdfc"),), 5_000_000, 1, opted_out=True
         )
+        policy = _ScriptedPolicy([Action.outreach(0.0, ContactChannel.EMAIL)] * 50)
+
+        result = run_episode(payment, opted_out, policy, model, rails, params, _rng())
+
+        assert result.refused_actions == MAX_CONSECUTIVE_REFUSALS
+        assert not result.hit_action_limit
+
+    def test_a_policy_may_pivot_after_one_refusal(
+        self, params: SimParams, customer: Customer
+    ) -> None:
+        """One refusal must not end the episode — switching tactics is legitimate."""
+        payment = FailedPayment("p", "c1", "i1", 100, "card_expired", 1)
+        model, rails = self._model(params)
+        policy = _ScriptedPolicy([Action.retry(1.0), Action.outreach(1.0, ContactChannel.EMAIL)])
+
+        result = run_episode(payment, customer, policy, model, rails, params, _rng())
+
+        assert result.refused_actions == 1
+        assert result.contact_count == 1, "the pivot to outreach must still be allowed"
+
+    def test_action_limit_is_surfaced_not_swallowed(
+        self, params: SimParams, payment: FailedPayment, customer: Customer
+    ) -> None:
+        """A policy that loops on *executing* actions still hits the safety bound."""
+        from recoup.sim.episode import MAX_ACTIONS_PER_EPISODE
+
+        # No opt-out hazard, so zero-delay outreach succeeds indefinitely.
+        never_tires = params.with_overrides(opt_out_hazard_per_contact=0.0)
+        model, rails = self._model(never_tires)
         policy = _ScriptedPolicy(
             [Action.outreach(0.0, ContactChannel.EMAIL)] * (MAX_ACTIONS_PER_EPISODE + 10)
         )
 
-        result = run_episode(payment, opted_out, policy, model, rails, params, _rng())
+        result = run_episode(payment, customer, policy, model, rails, never_tires, _rng())
         assert result.hit_action_limit
 
 
