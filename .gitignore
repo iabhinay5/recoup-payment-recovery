@@ -12,3 +12,6 @@ data/cache/
 runs/
 *.log
 .ipynb_checkpoints/
+*.egg-info/
+build/
+dist/
