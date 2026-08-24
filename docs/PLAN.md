@@ -22,6 +22,27 @@ Roughly 2 of the 6 daily hours belong to it.
 
 ---
 
+## Progress
+
+Updated 24 Aug 2026. Live state is in `STATUS.md`; this records what actually happened
+against what was planned.
+
+| Day | Planned | Actual |
+|---|---|---|
+| 0–1 | Planning, taxonomy | done as planned |
+| 2 | Simulator core | done |
+| 3–4 | Calibration, baselines, **checkpoint A** | done in one pass — gate passes at 58.2% vs 58.0% |
+| 5 | Bandit, **checkpoint B** | done — 68.0%, +9.8pp |
+| 6 | Guardrails, adversarial tests | done — guardrails cost nothing measurable |
+| 7 | Razorpay sandbox | done — real payment classified, taxonomy corrected by it |
+| 8 | LLM layer | done — normaliser, outreach, agent, all live on Groq |
+| 9 | Dashboard, **checkpoint C** | next |
+| 10 | Sensitivity sweep, ablations | pending |
+| 11 | README, video, **submit** | pending |
+
+**One day ahead.** Days 3 and 4 collapsed into one because the measurement harness had to
+exist before calibration could be checked — a small reordering, and the right one.
+
 ## Checkpoints
 
 Each checkpoint is a state where the project is demonstrable even if everything after it fails.
