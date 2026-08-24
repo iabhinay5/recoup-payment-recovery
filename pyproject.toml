@@ -3,10 +3,16 @@ name = "recoup"
 version = "0.1.0"
 description = "Agentic failed-payment recovery for Indian payment rails"
 requires-python = ">=3.12"
-dependencies = []
+# The simulator and the NPCI loaders are the project, not an optional extra. Keeping
+# them behind an extra is what broke CI at 0e5fa63: the workflow installed [dev,llm] and
+# every test failed on "import numpy".
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "openpyxl>=3.1",
+]
 
 [project.optional-dependencies]
-sim = ["numpy>=1.26", "pandas>=2.1", "openpyxl>=3.1"]
 ml = ["lightgbm>=4.3", "scikit-learn>=1.4"]
 llm = ["httpx>=0.27"]
 api = ["fastapi>=0.110", "uvicorn>=0.29"]

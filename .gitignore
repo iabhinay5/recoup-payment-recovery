@@ -19,3 +19,9 @@ dist/
 # NPCI source data is committed deliberately - see docs/CALIBRATION.md section 2.
 !data/npci/
 !data/npci/**
+
+# Generated locally, not part of the submission
+.coverage
+htmlcov/
+results.json
+Screenshot*.png
