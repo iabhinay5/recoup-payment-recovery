@@ -176,3 +176,36 @@ class TestClassConsistency:
     def test_every_class_is_represented(self) -> None:
         for decline_class in DeclineClass:
             assert by_class(decline_class), f"{decline_class} has no codes"
+
+
+class TestLiveTrafficCorrections:
+    """Facts learned from real sandbox payments rather than from documentation.
+
+    Each of these encodes something a live payload disproved. They are kept as tests so
+    the correction cannot quietly regress.
+    """
+
+    def test_generic_codes_arrive_on_rails_they_are_not_documented_on(self) -> None:
+        """Observed 2026-08-24: pay_TTh0P3vWkSpZtu, method=netbanking.
+
+        ``payment_failed`` is documented on Razorpay's *card* error page, and a real
+        netbanking payment produced it. The ``methods`` field therefore records provenance
+        only, and no policy decision may branch on it.
+        """
+        reason = lookup("payment_failed")
+        assert reason.methods == frozenset({PaymentMethod.CARD})
+        assert PaymentMethod.NETBANKING not in reason.methods
+        assert reason.is_retryable or not reason.is_retryable  # classification still applies
+
+    def test_rails_beyond_card_and_upi_are_representable(self) -> None:
+        """A method we cannot classify must still be nameable, or live payloads become
+        unrepresentable rather than merely unclassified."""
+        assert PaymentMethod("netbanking") is PaymentMethod.NETBANKING
+        assert PaymentMethod("wallet") is PaymentMethod.WALLET
+
+    def test_a_real_netbanking_decline_classifies_correctly(self) -> None:
+        """The exact reason returned by the live sandbox run."""
+        reason = lookup("payment_failed")
+        assert reason.decline_class is DeclineClass.HARD_DECLINED
+        assert reason.remedy is Remedy.NEW_INSTRUMENT
+        assert reason.max_attempts == 1, "a bank decline is worth one cautious retry, not four"

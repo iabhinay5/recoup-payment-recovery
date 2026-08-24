@@ -39,10 +39,19 @@ UPI_ERRORS_SOURCE = "https://razorpay.com/docs/errors/payments/upi/"
 
 
 class PaymentMethod(Enum):
-    """Payment rail a decline code was observed on."""
+    """A payment rail.
+
+    ``NETBANKING`` and ``WALLET`` are here because live sandbox traffic arrives on them,
+    not because this module classifies rail-specific codes for them. Razorpay publishes
+    separate error pages per method; only the card and UPI pages have been encoded so far,
+    so a netbanking-specific reason would currently fall through to the conservative
+    unknown default rather than being misclassified.
+    """
 
     CARD = "card"
     UPI = "upi"
+    NETBANKING = "netbanking"
+    WALLET = "wallet"
 
 
 class DeclineClass(Enum):
@@ -114,7 +123,17 @@ class DeclineReason:
     """
 
     code: str
+
     methods: frozenset[PaymentMethod]
+    """Which of Razorpay's error pages documented this code.
+
+    **This is provenance, not an exhaustive claim about which rails can emit the code.**
+    A live sandbox payment corrected that reading: ``payment_failed`` is documented on the
+    card page and arrived on ``netbanking``. Generic codes cross rails freely, so nothing
+    in the policy branches on this field — it exists so each entry can be traced back to
+    the page it came from.
+    """
+
     description: str
     decline_class: DeclineClass
     remedy: Remedy
