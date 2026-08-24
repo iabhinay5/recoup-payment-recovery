@@ -170,6 +170,11 @@ class Policy(Protocol):
 
     Implementations must be deterministic given the state, or must carry their own
     generator. The episode runner does not reseed between calls.
+
+    A policy may optionally define ``observe(succeeded, opted_out)``. When present, the
+    runner calls it after each action resolves, which is how a learning policy is credited
+    for what it chose. This mirrors production: a real system learns from the webhook that
+    reports whether a retry cleared, not from anything it knew at decision time.
     """
 
     @property
@@ -213,6 +218,13 @@ class EpisodeResult:
         and attempts are not free — they consume issuer goodwill and rail capacity.
         """
         return sum(1 for a in self.attempts if not a.succeeded)
+
+
+def _notify(policy: Policy, succeeded: bool, opted_out: bool) -> None:
+    """Report an action's outcome back to a learning policy, if it wants one."""
+    observe = getattr(policy, "observe", None)
+    if observe is not None:
+        observe(succeeded, opted_out)
 
 
 def _resolve_instrument(customer: Customer, instrument_id: str | None) -> Instrument:
@@ -299,6 +311,7 @@ def run_episode(
             )
             attempts.append(attempt)
             consecutive_refusals = 0
+            _notify(policy, attempt.succeeded, opted_out)
 
             if attempt.succeeded:
                 return EpisodeResult(
@@ -334,10 +347,13 @@ def run_episode(
             hazard = params.opt_out_hazard_per_contact * channel.intrusiveness
             if rng.random() < hazard:
                 opted_out = True
+                _notify(policy, False, True)
                 continue
 
-            if rng.random() < params.outreach_response_rate:
+            responded = rng.random() < params.outreach_response_rate
+            if responded:
                 in_session = True
+            _notify(policy, responded, opted_out)
 
     else:
         return EpisodeResult(
