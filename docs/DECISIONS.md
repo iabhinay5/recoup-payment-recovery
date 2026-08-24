@@ -144,3 +144,39 @@ implemented as a prompt instruction is a guardrail that fails under distribution
 
 **Demonstrated, not asserted.** The demo includes a deliberate attempt to trigger a
 double-charge, and shows the idempotency layer rejecting it.
+
+---
+
+## ADR-008 — Recovery is modelled by mechanism, not by fitted curve
+
+**Decision.** The simulator does not contain a "probability of recovery vs. hours since
+failure" curve. Recovery emerges from the processes that actually drive it: a customer
+balance process on a salary cycle, a rail outage process, and a session state that only
+outreach can open.
+
+**Why.** The easy implementation is a curve fitted so the published benchmarks come out
+right. It is also self-defeating. The thing under evaluation is *a policy that chooses
+when to retry* — hand it a curve and the optimum is wherever the curve peaks, the policy
+finds it immediately, and the experiment measures nothing but our own curve-fitting.
+
+Modelling mechanisms means the policy has to infer something real: that balances recover
+on paydays, that outages end, that a cancelled payment needs a human back in a session.
+None of those are visible to it directly.
+
+It also changes what the Recurly benchmark is *for*. Under a fitted curve, 58% would be an
+input. Under this design it is an independent **check**: if a Day-1/3/5/7 schedule
+reproduces near 58% in a simulator that was never told about that number, the mechanisms
+are plausibly calibrated. That check is the day 4 gate in docs/PLAN.md.
+
+**Rejected.** Fitting a hazard curve per decline reason. Faster to build, and it would
+have produced better-looking results sooner — which is precisely the problem.
+
+**Cost.** More parameters to justify, and calibration is genuinely harder: the mechanisms
+have to be tuned jointly until an *emergent* quantity matches a published one. That work
+is real, and it is the work that makes the eventual number mean anything.
+
+**First observation, before calibration.** A naive fixed Day-1/3/5/7 schedule over 5,000
+simulated episodes spends **78.8% of its wasted attempts on session-conditional declines**
+— failures that a silent retry can never resolve, no matter how well timed. That is the
+project's thesis appearing unprompted in the first end-to-end run, and it is the number
+the pitch should lead with.

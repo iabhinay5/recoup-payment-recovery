@@ -2,7 +2,7 @@
 name = "recoup"
 version = "0.1.0"
 description = "Agentic failed-payment recovery for Indian payment rails"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = []
 
 [project.optional-dependencies]
@@ -31,6 +31,6 @@ src = ["src", "tests"]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 files = ["src"]
