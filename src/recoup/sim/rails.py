@@ -42,10 +42,8 @@ class Outage:
 
 
 def generate_outages(
-    bank_ids: tuple[str, ...],
+    banks: dict[str, tuple[float, float]],
     horizon_hours: float,
-    rate_per_bank_day: float,
-    mean_duration_hours: float,
     rng: np.random.Generator,
 ) -> tuple[Outage, ...]:
     """Sample outages as a Poisson process per bank, with exponential durations.
@@ -53,15 +51,19 @@ def generate_outages(
     A Poisson arrival process is the standard model for independent failures over time,
     and it produces the property that matters here: outages are unpredictable in timing,
     so a policy cannot learn a schedule and must actually consult health at decision time.
+
+    Rates and durations are per bank, taken from NPCI's published incident data. Sharing
+    one rate across all banks would erase the 17x dispersion that makes knowing *which*
+    bank you are retrying into worth anything.
     """
     outages: list[Outage] = []
     horizon_days = horizon_hours / 24.0
 
-    for bank_id in bank_ids:
-        n = int(rng.poisson(rate_per_bank_day * horizon_days))
+    for bank_id, (rate_per_day, mean_hours) in banks.items():
+        n = int(rng.poisson(rate_per_day * horizon_days))
         for _ in range(n):
             start = float(rng.uniform(0.0, horizon_hours))
-            duration = float(rng.exponential(mean_duration_hours))
+            duration = float(rng.exponential(mean_hours))
             outages.append(Outage(bank_id, start, duration))
 
     return tuple(sorted(outages, key=lambda o: (o.bank_id, o.start_hours)))

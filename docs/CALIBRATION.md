@@ -43,17 +43,44 @@ Source: NPCI UPI ecosystem statistics — https://www.npci.org.in/what-we-do/upi
 
 NPCI publishes **bank-wise technical decline (TD%) and business decline (BD%) monthly**.
 
-| Parameter | Value | Tier | Note |
-|---|---|---|---|
-| System-wide TD, current | ~0.7–0.8% | T2 | Down from 8–10% in 2016 |
-| NPCI target, TD | < 1% | T2 | Circular OC-149, June 2022 — verify primary |
-| NPCI target, BD | < 5% | T2 | Same circular |
-| Per-bank TD dispersion | **sweep** | — | Bank-wise variance is the point; download actual monthly data during build |
-| Outage duration distribution | **sweep** | — | Not published; swept across plausible range |
+**RESOLVED — now T1.** 11 monthly files (Sep 2025 – Jul 2026) from the Downtime/Incidents
+tab ship in `data/npci/downtime/`, so this calibration is reproducible from a clone.
+Loader: `recoup.data.npci`.
 
-**Action during build:** download real bank-wise monthly TD/BD data and drive the
-simulator's bank-health process from actual observed values rather than a fitted
-distribution. This upgrades the most important calibration input to T1.
+**300 incidents, 37 distinct banks, 831.3 downtime hours.**
+
+| Parameter | Was (invented) | Now (measured) | Tier |
+|---|---|---|---|
+| Mean hours per incident | 2.50 | **2.77** (±5.8%) | T1 |
+| Median hours per incident | — | **1.67** | T1 |
+| Outage rate, pooled over all 741 banks | 0.05 | **0.00121** /bank/day | T1 |
+| Per-bank outage rate and duration | one shared value | **per bank, measured** | T1 |
+| System-wide TD | ~0.7–0.8% | unchanged | T2 |
+
+**The 41× correction, and why the naive reading is wrong.** Pooled across all 741 member
+banks the rate is 0.00121/bank/day — 41× below the invented figure. But that denominator is
+dominated by several hundred small cooperative banks processing almost nothing. State Bank
+of India's own measured rate is **0.0988/day, roughly 82× the pooled average**. A merchant
+does not meet the average bank; it meets the banks its customers hold accounts with. The
+simulator therefore uses the ten most incident-prone banks with their individually measured
+profiles, which are also India's largest issuers by volume.
+
+**Dispersion is the finding.** Mean incident duration ranges from 0.87h (Indian Bank) to
+5.31h (Uttar Pradesh Gramin Bank) among the selected banks, and up to 14.20h across all 37.
+That ~17× spread is the entire reason knowing *which* rail you are retrying into is worth
+anything — if every bank failed identically, ADR-006 would be pointless.
+
+**Two reading errors this data invites**, both silent and both worth stating:
+1. Banks with no incidents are **absent, not zero**. Computing the rate over only the banks
+   that appear overstates it by roughly two orders of magnitude.
+2. Bank names are typed by hand and vary in case and suffix across months. "Punjab and Sind
+   Bank" and "Punjab And Sind Bank" are one bank; not merging them splits a bank's history
+   and halves its apparent failure rate. Normalisation collapsed 43 apparent banks to 37.
+
+**Uptime tab — checked, not usable.** The Uptime files report NPCI's *own* central
+infrastructure uptime (100% in the months sampled), not per-bank uptime. Useful as a
+negative result: UPI failures originate at the bank edge, not in NPCI's core, which is why
+the model puts all rail variance on the issuer.
 
 ## 3. Recovery baselines — T2, upgrade to T1
 

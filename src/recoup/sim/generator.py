@@ -19,9 +19,9 @@ from recoup.taxonomy import PaymentMethod
 
 __all__ = ["Population", "generate_population"]
 
-# Placeholder issuers with plausible technical-decline dispersion. Day 3 of docs/PLAN.md
-# replaces these with real NPCI bank-wise monthly figures, which is what upgrades this
-# input from an assumption to a measurement (docs/CALIBRATION.md section 2).
+# Fallback issuers, used only when the NPCI data directory is absent (CI checkouts
+# without the data files). Real runs use measured per-bank outage profiles loaded from
+# data/npci/downtime - see recoup.data.npci.banks_from_downtime.
 _PLACEHOLDER_BANKS: tuple[tuple[str, str, float], ...] = (
     ("hdfc", "HDFC Bank", 0.004),
     ("icici", "ICICI Bank", 0.006),
@@ -60,6 +60,11 @@ class Population:
     def bank_decline_rates(self) -> dict[str, float]:
         """Bank id to steady-state technical decline rate, for ``RailHealth``."""
         return {b.id: b.base_technical_decline_rate for b in self.banks}
+
+    @property
+    def bank_outage_profiles(self) -> dict[str, tuple[float, float]]:
+        """Bank id to ``(outages per day, mean outage hours)``, for ``generate_outages``."""
+        return {b.id: (b.outage_rate_per_day, b.mean_outage_hours) for b in self.banks}
 
 
 def _sample_decline_codes(params: SimParams, n: int, rng: np.random.Generator) -> list[str]:
@@ -142,15 +147,34 @@ def _amount_for(
     return max(100, amount)
 
 
+def _load_banks() -> tuple[Bank, ...]:
+    """Real banks with measured outage profiles, falling back to placeholders.
+
+    The fallback exists so the simulator runs in a checkout without the NPCI files. It is
+    deliberately not silent about which one it used — a run calibrated on invented numbers
+    that looks identical to one calibrated on published data is a trap.
+    """
+    try:
+        from recoup.data.npci import banks_from_downtime, load_downtime
+
+        records = load_downtime()
+        if records:
+            return banks_from_downtime(records)
+    except (OSError, ValueError, ImportError):
+        pass
+
+    return tuple(
+        Bank(id=bid, name=name, base_technical_decline_rate=rate)
+        for bid, name, rate in _PLACEHOLDER_BANKS
+    )
+
+
 def generate_population(params: SimParams) -> Population:
     """Generate banks, customers, instruments, and one failed payment per customer."""
     rng = np.random.default_rng(params.seed)
     horizon_hours = params.horizon_days * HOURS_PER_DAY
 
-    banks = tuple(
-        Bank(id=bid, name=name, base_technical_decline_rate=rate)
-        for bid, name, rate in _PLACEHOLDER_BANKS
-    )
+    banks = _load_banks()
     bank_ids = [b.id for b in banks]
 
     decline_codes = _sample_decline_codes(params, params.n_customers, rng)

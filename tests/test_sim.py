@@ -130,7 +130,7 @@ class TestRailHealth:
         assert RailHealth({"a": 0.0}).hours_until_healthy("a", 0.0) is None
 
     def test_generated_outages_stay_within_the_horizon(self) -> None:
-        outages = generate_outages(("a", "b"), 336.0, 0.5, 3.0, _rng())
+        outages = generate_outages({"a": (0.5, 3.0), "b": (0.2, 5.0)}, 336.0, _rng())
         assert all(0.0 <= o.start_hours <= 336.0 for o in outages)
         assert all(o.duration_hours > 0 for o in outages)
 

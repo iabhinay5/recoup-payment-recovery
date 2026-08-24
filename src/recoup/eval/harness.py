@@ -55,10 +55,8 @@ def build_world(params: SimParams) -> World:
     # distinct from the per-episode streams below.
     rng = np.random.default_rng([params.seed, 991])
     outages = generate_outages(
-        tuple(b.id for b in population.banks),
+        population.bank_outage_profiles,
         params.horizon_days * HOURS_PER_DAY,
-        params.outage_rate_per_bank_day,
-        params.outage_mean_duration_hours,
         rng,
     )
     rails = RailHealth(population.bank_decline_rates, outages)

@@ -41,10 +41,20 @@ class Bank:
     id: str
     name: str
     base_technical_decline_rate: float
+    outage_rate_per_day: float = 0.00121
+    mean_outage_hours: float = 2.77
+    """Per-bank outage behaviour, measured from NPCI's published incident data.
+
+    Defaults are the all-bank pooled figures over Sep 2025 - Jul 2026. Banks differ by
+    roughly 17x in mean incident duration, and that dispersion is the entire reason a
+    rail-aware policy can outperform one that ignores which bank it is retrying into.
+    """
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.base_technical_decline_rate <= 1.0:
             raise ValueError(f"{self.id}: technical decline rate must be a probability")
+        if self.outage_rate_per_day < 0 or self.mean_outage_hours < 0:
+            raise ValueError(f"{self.id}: outage parameters must be non-negative")
 
 
 @dataclass(frozen=True, slots=True)

@@ -15,3 +15,7 @@ runs/
 *.egg-info/
 build/
 dist/
+
+# NPCI source data is committed deliberately - see docs/CALIBRATION.md section 2.
+!data/npci/
+!data/npci/**
