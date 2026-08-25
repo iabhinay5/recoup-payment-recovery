@@ -117,9 +117,12 @@ lowering it produces empty responses with `finish_reason: length`, not errors.
 checkout. **Use Netbanking** — pick any bank, then click *Failure* on the mock page. No
 credentials needed.
 
-**`docs/benchmark.html` is now stale** — it carries the retired +9.8pp figures. Regenerate
-it from `data/results/eval.json` after the day 10 sweep and redeploy to the same artifact
-URL (https://claude.ai/code/artifact/b7458ae4-ba93-4758-90f8-f3c980eb9320).
+**`docs/benchmark.html` is current and republished** at
+https://claude.ai/code/artifact/b7458ae4-ba93-4758-90f8-f3c980eb9320 — every figure now
+comes from `data/results/`, and it gained an ablation table and a sensitivity panel.
+`scripts/check_benchmark.py` reads the numbers back out of the page and fails if they
+disagree with the results files; it runs in CI. **If the evaluation is ever re-run, that
+check will catch the page before a reader does.**
 
 ---
 
@@ -228,6 +231,7 @@ from `eval.json` and `sweep.json`; `--check` fails if they have drifted. That ch
 ## Day 11 plan
 
 README and ARCHITECTURE.md, then record the video and submit. The numbers all come from
-`docs/RESULTS.md` — do not retype any of them. Regenerate `docs/benchmark.html` from
-`data/results/eval.json` and redeploy to the same artifact URL
-(https://claude.ai/code/artifact/b7458ae4-ba93-4758-90f8-f3c980eb9320).
+`docs/RESULTS.md` — do not retype any of them. The benchmark page is already current.
+
+Before recording: regenerate the Groq API key (it expires around 31 Aug) and set
+`RAZORPAY_WEBHOOK_SECRET` in `.env` if the video shows the webhook path.
