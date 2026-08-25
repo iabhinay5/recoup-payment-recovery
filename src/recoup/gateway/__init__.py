@@ -5,6 +5,7 @@ from recoup.gateway.webhooks import (
     SIGNATURE_HEADER,
     FailedPaymentEvent,
     InvalidSignature,
+    event_from_entity,
     parse_failed_payment,
     verify_signature,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "LiveKeyRefused",
     "RazorpayClient",
     "RazorpayError",
+    "event_from_entity",
     "parse_failed_payment",
     "verify_signature",
 ]

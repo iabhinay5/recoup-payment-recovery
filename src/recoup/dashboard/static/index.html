@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recoup — live decisions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --ground: #EDF1F4;
+  --surface: #FBFCFD;
+  --surface-2: #F4F7F9;
+  --ink: #152230;
+  --ink-2: #3D5063;
+  --ink-3: #6B7C8C;
+  --rule: #D5DEE4;
+  --rule-2: #E4EBEF;
+  --accent: #0E8C74;
+  --accent-soft: rgba(14, 140, 116, 0.12);
+  --warn: #C4841A;
+  --warn-soft: rgba(196, 132, 26, 0.14);
+  --bad: #A6412F;
+  --bad-soft: rgba(166, 65, 47, 0.12);
+  --info: #2563A8;
+  --info-soft: rgba(37, 99, 168, 0.12);
+  --shadow: 0 1px 2px rgba(21, 34, 48, .05), 0 8px 24px -12px rgba(21, 34, 48, .16);
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --slab: "Zilla Slab", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #0A1219;
+    --surface: #111C25;
+    --surface-2: #16232E;
+    --ink: #E1E9EF;
+    --ink-2: #A9BAC7;
+    --ink-3: #7C8E9C;
+    --rule: #24343F;
+    --rule-2: #1B2833;
+    --accent: #26AE90;
+    --accent-soft: rgba(38, 174, 144, 0.16);
+    --warn: #C9922F;
+    --warn-soft: rgba(201, 146, 47, 0.18);
+    --bad: #C25743;
+    --bad-soft: rgba(194, 87, 67, 0.18);
+    --info: #4380C6;
+    --info-soft: rgba(67, 128, 198, 0.18);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -12px rgba(0, 0, 0, .6);
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+}
+h1, h2, h3 { font-family: var(--slab); margin: 0; font-weight: 600; }
+code, .mono { font-family: var(--mono); }
+
+header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+header h1 { font-size: 19px; letter-spacing: -0.01em; }
+header .sub { color: var(--ink-3); font-size: 12.5px; }
+.pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.pill.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.pill.off { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); }
+
+main {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 24px 48px;
+  align-items: start;
+}
+@media (max-width: 940px) { main { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card > h2 {
+  font-size: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule-2);
+  background: var(--surface-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.card > h2 .hint { font-family: var(--sans); font-size: 11.5px; color: var(--ink-3); font-weight: 400; }
+.card .body { padding: 14px 16px; }
+.stack { display: grid; gap: 18px; }
+
+/* controls */
+.controls { display: grid; gap: 10px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+select, input, button {
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+select { flex: 1 1 180px; }
+button { cursor: pointer; font-weight: 500; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.note { font-size: 12px; color: var(--ink-3); }
+.status-line { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); min-height: 17px; }
+
+/* feed */
+.feed { max-height: 460px; overflow-y: auto; }
+.feed-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--rule-2);
+  border-radius: 0;
+  background: transparent;
+  padding: 11px 16px;
+}
+.feed-item:hover { background: var(--surface-2); }
+.feed-item.selected { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.feed-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.feed-code { font-family: var(--mono); font-size: 12.5px; font-weight: 500; }
+.feed-amount { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+.feed-bottom { display: flex; gap: 6px; align-items: center; margin-top: 5px; flex-wrap: wrap; }
+.feed-action { font-size: 12px; color: var(--ink-2); }
+
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.tag.webhook { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.tag.sandbox { background: var(--info-soft); color: var(--info); border-color: var(--info); }
+.tag.injected { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.tag.allowed { background: var(--accent-soft); color: var(--accent); }
+.tag.refused { background: var(--bad-soft); color: var(--bad); }
+.tag.deferred { background: var(--warn-soft); color: var(--warn); }
+.tag.none { background: var(--surface-2); color: var(--ink-3); }
+
+/* trace */
+.step { border-bottom: 1px solid var(--rule-2); padding: 14px 16px; display: grid; gap: 6px; }
+.step:last-child { border-bottom: 0; }
+.step-head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+.step-title { font-weight: 600; font-size: 13px; }
+.step-verdict { font-family: var(--mono); font-size: 12px; padding: 2px 8px; border-radius: 5px; }
+.step-verdict.pass { background: var(--accent-soft); color: var(--accent); }
+.step-verdict.refuse { background: var(--bad-soft); color: var(--bad); }
+.step-verdict.defer { background: var(--warn-soft); color: var(--warn); }
+.step-verdict.info { background: var(--surface-2); color: var(--ink-2); }
+.step-detail { font-size: 12.5px; color: var(--ink-2); }
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 3px 16px; margin-top: 4px; }
+.field { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; border-bottom: 1px dotted var(--rule-2); padding: 2px 0; }
+.field .k { color: var(--ink-3); }
+.field .v { font-family: var(--mono); font-size: 11.5px; text-align: right; word-break: break-all; }
+
+.unknowns { background: var(--warn-soft); border-top: 1px solid var(--rule-2); padding: 12px 16px; }
+.unknowns h3 { font-size: 12.5px; color: var(--warn); margin-bottom: 4px; }
+.unknowns li { font-size: 12px; color: var(--ink-2); margin-bottom: 3px; }
+.unknowns ul { margin: 0; padding-left: 18px; }
+
+/* results */
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--rule-2); }
+th:first-child, td:first-child { text-align: left; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); font-weight: 500; }
+td.num { font-family: var(--mono); }
+tr.best td { background: var(--accent-soft); font-weight: 600; }
+tr.baseline td { background: var(--surface-2); }
+.scroll-x { overflow-x: auto; }
+
+.gate { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; font-size: 12.5px; }
+.gate .verdict { font-family: var(--mono); font-weight: 600; padding: 2px 8px; border-radius: 5px; }
+.gate .verdict.PASS { background: var(--accent-soft); color: var(--accent); }
+.gate .verdict.FAIL { background: var(--bad-soft); color: var(--bad); }
+
+.bars { display: grid; gap: 5px; margin-top: 8px; }
+.bar-row { display: grid; grid-template-columns: 150px 1fr 74px; gap: 8px; align-items: center; font-size: 12px; }
+.bar { height: 13px; border-radius: 3px; background: var(--rule-2); overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+.bar.alt > span { background: var(--info); }
+.bar-val { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); text-align: right; }
+
+.empty { padding: 26px 16px; text-align: center; color: var(--ink-3); font-size: 12.5px; }
+.provenance { font-family: var(--mono); font-size: 11px; color: var(--ink-3); padding: 10px 16px; border-top: 1px solid var(--rule-2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Recoup — failed-payment recovery, live</h1>
+    <div class="sub">Every verdict below is returned by the engine, not described by this page.</div>
+  </div>
+  <div class="pills" id="pills"></div>
+</header>
+
+<main>
+  <div class="stack">
+    <section class="card">
+      <h2>Drive the demo <span class="hint">three streams, badged apart</span></h2>
+      <div class="body controls">
+        <div class="row">
+          <select id="code"></select>
+          <button class="primary" id="inject">Inject decline</button>
+        </div>
+        <div class="note">
+          Injected declines are synthetic and labelled <span class="tag injected">simulated</span>
+          everywhere they appear. They exist to show decline classes the sandbox will not
+          produce on demand.
+        </div>
+        <div class="row">
+          <button id="pull">Pull from Razorpay sandbox</button>
+          <button class="danger" id="double">Attempt double charge</button>
+        </div>
+        <div class="status-line" id="status"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Event feed <span class="hint" id="feed-count"></span></h2>
+      <div class="feed" id="feed"><div class="empty">No events yet.</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Guardrail ledger <span class="hint">refusals, by rule</span></h2>
+      <div class="body" id="ledger"></div>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <h2 id="trace-title">Decision trace <span class="hint">select a payment</span></h2>
+      <div id="trace"><div class="empty">Inject a decline or pull from the sandbox to see the chain.</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Measured results <span class="hint">read from data/results/eval.json</span></h2>
+      <div id="results"><div class="empty">Loading…</div></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmtPct = (x) => (100 * x).toFixed(1) + "%";
+const fmtNum = (x, d = 2) => Number(x).toFixed(d);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+let selected = null;
+let traces = [];
+let feedSignature = null;
+let resultsStamp = null;
+
+function say(message) { $("status").textContent = message; }
+
+/* ---- taxonomy menu: populated from the engine, never hardcoded ---- */
+async function loadCodes() {
+  const { codes } = await (await fetch("/api/decline-codes")).json();
+  const groups = {};
+  for (const c of codes) (groups[c.class] ||= []).push(c);
+  $("code").innerHTML = Object.entries(groups).map(([cls, list]) =>
+    `<optgroup label="${esc(cls)}">` +
+    list.map((c) => `<option value="${esc(c.code)}">${esc(c.code)} — ${c.max_attempts} attempt(s)</option>`).join("") +
+    `</optgroup>`
+  ).join("");
+  $("code").value = "card_expired";
+}
+
+/* ---- header pills ---- */
+function renderPills(s) {
+  const pills = [
+    ["policy " + s.policy, "on"],
+    [s.signature_verification ? "webhook signature: verified" : "webhook secret: NOT SET",
+      s.signature_verification ? "on" : "off"],
+    [s.razorpay_configured ? "razorpay: test keys loaded" : "razorpay: not configured",
+      s.razorpay_configured ? "on" : "off"],
+    [`${s.webhook_events} webhook event(s)`, ""],
+    [`${s.rejected_signatures} rejected`, s.rejected_signatures ? "off" : ""],
+    [`${s.charges_recorded} charge(s) recorded`, ""],
+  ];
+  $("pills").innerHTML = pills.map(([t, k]) => `<span class="pill ${k}">${esc(t)}</span>`).join("");
+}
+
+/* ---- feed ---- */
+function renderFeed(items) {
+  $("feed-count").textContent = items.length ? `${items.length} shown, newest first` : "";
+  if (!items.length) { $("feed").innerHTML = `<div class="empty">No events yet.</div>`; return; }
+  $("feed").innerHTML = items.map((t) => `
+    <button class="feed-item ${t.payment_id === selected ? "selected" : ""}" data-id="${esc(t.payment_id)}">
+      <div class="feed-top">
+        <span class="feed-code">${esc(t.decline_code)}</span>
+        <span class="feed-amount">Rs ${t.amount_rupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+      </div>
+      <div class="feed-bottom">
+        <span class="tag ${esc(t.source)}">${t.source === "injected" ? "simulated" : esc(t.source)}</span>
+        <span class="tag ${esc(t.outcome)}">${esc(t.outcome)}</span>
+        <span class="feed-action">${esc(t.action_detail)}</span>
+      </div>
+    </button>`).join("");
+
+  for (const el of document.querySelectorAll(".feed-item")) {
+    el.onclick = () => { selected = el.dataset.id; render(); };
+  }
+}
+
+/* ---- trace ---- */
+function renderTrace(t) {
+  if (!t) {
+    $("trace-title").innerHTML = `Decision trace <span class="hint">select a payment</span>`;
+    $("trace").innerHTML = `<div class="empty">Inject a decline or pull from the sandbox to see the chain.</div>`;
+    return;
+  }
+  $("trace-title").innerHTML =
+    `Decision trace <span class="hint">${esc(t.payment_id)} · ${esc(t.decline_class)} · ${esc(t.policy_name)}</span>`;
+
+  const steps = t.steps.map((s) => `
+    <div class="step">
+      <div class="step-head">
+        <span class="step-title">${esc(s.title)}</span>
+        <span class="step-verdict ${esc(s.kind)}">${esc(s.verdict)}</span>
+      </div>
+      <div class="step-detail">${esc(s.detail)}</div>
+      ${s.fields.length ? `<div class="fields">${s.fields.map(([k, v]) =>
+        `<div class="field"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join("")}</div>` : ""}
+    </div>`).join("");
+
+  const unknowns = t.notes.length ? `
+    <div class="unknowns">
+      <h3>What this payload could not tell us</h3>
+      <ul>${t.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
+    </div>` : "";
+
+  $("trace").innerHTML = steps + unknowns;
+}
+
+/* ---- results ---- */
+const COLUMNS = [
+  ["recovery_rate", "recovery", fmtPct],
+  ["revenue_recovery_rate", "revenue", fmtPct],
+  ["attempts_per_episode", "att/ep", (x) => fmtNum(x, 2)],
+  ["wasted_attempt_rate", "wasted", fmtPct],
+  ["contacts_per_episode", "contacts", (x) => fmtNum(x, 2)],
+  ["opt_out_rate", "opt-out", fmtPct],
+];
+
+function renderResults(r) {
+  if (!r.available) {
+    $("results").innerHTML = `<div class="empty">${esc(r.reason)}</div>`;
+    return;
+  }
+  if (!r.policies || !r.policies.length) {
+    $("results").innerHTML = `<div class="empty">The results file contains no policies.</div>`;
+    return;
+  }
+  const base = r.policies.find((p) => p.policy === r.baseline);
+  const best = r.policies.reduce((a, b) => (b.recovery_rate > a.recovery_rate ? b : a));
+
+  const rows = r.policies.map((p) => {
+    const cls = p.policy === r.baseline ? "baseline" : p.policy === best.policy ? "best" : "";
+    const delta = base && p.policy !== r.baseline
+      ? `${p.recovery_rate - base.recovery_rate >= 0 ? "+" : ""}${((p.recovery_rate - base.recovery_rate) * 100).toFixed(1)}pp`
+      : "—";
+    return `<tr class="${cls}">
+      <td>${esc(p.policy)}</td>
+      ${COLUMNS.map(([k, , f]) => `<td class="num">${f(p[k])}</td>`).join("")}
+      <td class="num">${delta}</td>
+    </tr>`;
+  }).join("");
+
+  const c = r.calibration;
+  const gate = `
+    <div class="gate">
+      <span><b>Calibration gate</b></span>
+      <span>published ${fmtPct(c.published_recovery)}</span>
+      <span>simulated ${fmtPct(c.observed_recovery)}</span>
+      <span>difference ${(c.delta * 100 >= 0 ? "+" : "") + (c.delta * 100).toFixed(1)}pp</span>
+      <span class="verdict ${esc(c.verdict)}">${esc(c.verdict)}</span>
+      <span class="note">tolerance ±${(c.tolerance * 100).toFixed(1)}pp · ${esc(c.source)}</span>
+    </div>`;
+
+  const waste = (p, alt) => {
+    const total = Object.values(p.wasted_by_class).reduce((a, b) => a + b, 0) || 1;
+    const rows = Object.entries(p.wasted_by_class).sort((a, b) => b[1] - a[1]).map(([k, v]) => `
+      <div class="bar-row">
+        <span>${esc(k)}</span>
+        <span class="bar ${alt ? "alt" : ""}"><span style="width:${(100 * v / total).toFixed(1)}%"></span></span>
+        <span class="bar-val">${v.toLocaleString()} · ${(100 * v / total).toFixed(1)}%</span>
+      </div>`).join("");
+    return `<div style="margin-top:14px"><b>${esc(p.policy)}</b> — ${p.wasted_attempts.toLocaleString()} wasted attempts
+      <div class="bars">${rows}</div></div>`;
+  };
+
+  $("results").innerHTML = `
+    <div class="body">
+      ${gate}
+      <div class="scroll-x" style="margin-top:12px">
+        <table>
+          <thead><tr><th>policy</th>${COLUMNS.map(([, l]) => `<th>${l}</th>`).join("")}<th>vs baseline</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="note" style="margin-top:10px">
+        Where the wasted attempts go. The routing win is visible here before it is visible
+        in the recovery column: the baseline spends most of its waste on declines a silent
+        retry cannot resolve.
+      </div>
+      ${base ? waste(base, true) : ""}
+      ${best.policy !== r.baseline ? waste(best, false) : ""}
+    </div>
+    <div class="provenance">
+      ${r.n_episodes.toLocaleString()} held-out episodes · seed ${r.params.seed} ·
+      ${r.params.n_customers.toLocaleString()} customers · ${r.params.bandit_epochs} training epoch(s) ·
+      generated ${esc(r.generated_at)}${r.git_commit ? " · commit " + esc(r.git_commit.slice(0, 8)) : ""}
+    </div>`;
+}
+
+/* ---- ledger ---- */
+function renderLedger(refusals) {
+  const entries = Object.entries(refusals);
+  if (!entries.length) {
+    $("ledger").innerHTML = `<div class="note">No refusals yet. Every rule that fires is recorded here with the action it stopped.</div>`;
+    return;
+  }
+  $("ledger").innerHTML = entries.sort((a, b) => b[1] - a[1]).map(([rule, n]) =>
+    `<div class="field"><span class="k">${esc(rule)}</span><span class="v">${n}</span></div>`).join("");
+}
+
+/* ---- polling ----
+   The feed and the results table are only redrawn when they actually change. Redrawing
+   a list every two seconds throws away the reader's scroll position mid-demo, which is
+   a small bug that looks like a broken page on camera. */
+function render() {
+  const signature = traces.map((t) => t.payment_id).join(",") + "|" + selected;
+  if (signature !== feedSignature) {
+    feedSignature = signature;
+    renderFeed(traces);
+  }
+  renderTrace(traces.find((t) => t.payment_id === selected) || null);
+}
+
+async function poll() {
+  try {
+    const s = await (await fetch("/api/state?limit=30")).json();
+    traces = s.traces;
+    if (!selected && traces.length) selected = traces[0].payment_id;
+    renderPills(s);
+    renderLedger(s.refusals);
+    render();
+
+    // Picks up a run of scripts/run_eval.py without needing a page reload.
+    const r = await (await fetch("/api/results")).json();
+    const stamp = r.available ? r.generated_at : "unavailable:" + r.reason;
+    if (stamp !== resultsStamp) {
+      resultsStamp = stamp;
+      renderResults(r);
+    }
+  } catch (e) {
+    say("lost contact with the server");
+  }
+}
+
+/* ---- actions ---- */
+$("inject").onclick = async () => {
+  const code = $("code").value;
+  const response = await fetch("/api/inject", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ decline_code: code }),
+  });
+  const t = await response.json();
+  selected = t.payment_id;
+  say(`injected ${code} → ${t.action_detail} (${t.outcome})`);
+  await poll();
+};
+
+$("pull").onclick = async () => {
+  say("pulling from the Razorpay sandbox…");
+  const r = await (await fetch("/api/sandbox/pull", { method: "POST" })).json();
+  say(r.ok
+    ? `sandbox: ${r.added} new failed payment(s) from ${r.inspected} inspected`
+    : `sandbox: ${r.error}`);
+  await poll();
+};
+
+$("double").onclick = async () => {
+  const response = await fetch("/api/double-charge", { method: "POST" });
+  const r = await response.json();
+  if (!r.attempted) { say(r.reason); return; }
+  say(r.allowed
+    ? `DOUBLE CHARGE ALLOWED on ${r.payment_id} — this is a bug, not a demo`
+    : `replay of ${r.payment_id} refused: ${r.rule} — ${r.detail}`);
+  await poll();
+};
+
+loadCodes();
+poll();
+setInterval(poll, 2000);
+</script>
+</body>
+</html>

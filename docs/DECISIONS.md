@@ -180,3 +180,69 @@ simulated episodes spends **78.8% of its wasted attempts on session-conditional 
 — failures that a silent retry can never resolve, no matter how well timed. That is the
 project's thesis appearing unprompted in the first end-to-end run, and it is the number
 the pitch should lead with.
+
+---
+
+## ADR-009 — The dashboard renders traces produced by the engine, never its own account of them
+
+**Decision.** The demo UI holds no decision logic. `recoup.trace.explain` runs the real
+policy against the real guardrails and returns a `DecisionTrace`; the dashboard, and the
+sandbox CLI demo, only lay that object out on a screen.
+
+**Why.** The natural way to build a demo screen is to read a decline code and describe what
+the policy would probably do with it. That produces a UI that is correct on the day it is
+written and silently wrong afterwards — the policy changes, no test fails, and the first
+person to notice the disagreement is a panellist reading the code next to the screen. A
+dashboard that *is* the decision cannot drift from it.
+
+It also settles a question the panel is entitled to ask: is the policy you evaluated the
+policy you could deploy? `EpisodeState` was written as the simulator's interface to a
+policy. `recoup.trace.live_state` constructs the same type from a real Razorpay webhook, so
+the object measured over 20,000 simulated episodes is literally the object handed a live
+failure — not a reimplementation claimed to agree with it.
+
+**Honest about what a webhook cannot say.** A `payment.failed` payload does not carry the
+issuing bank, the customer's other instruments, or their income. Those are joins a merchant
+performs against its own records. Where they are missing the trace records the gap and the
+screen prints it, because a dashboard that quietly substitutes a plausible bank id is worse
+than one that admits it does not know: the first teaches you to trust a number that is not
+there.
+
+**Rejected.** Streamlit, which is the cut-line fallback in SCOPE.md. Not needed — FastAPI
+was already a dependency for the webhook receiver, so the dashboard and the endpoint being
+demonstrated run in one process on one port, and the endpoint on screen is the endpoint
+under test. Also rejected: a JS framework, which would add a build step to a page that
+polls one JSON endpoint.
+
+**Cost.** `recoup.trace` depends on the gateway, the policies, the guardrails and the
+simulator's entity types at once. That is a wide dependency for one module. It is the right
+place for it — the module sits above all four and none of them import it — but it does mean
+a change to `EpisodeState` now breaks the live path as well as the simulator, which is the
+coupling the decision is deliberately buying.
+
+---
+
+## ADR-010 — Measured results are a file, not a scrollback
+
+**Decision.** `scripts/run_eval.py` writes `data/results/eval.json`, recording the metrics
+alongside the parameters, the seed and the git commit that produced them. Every surface
+that displays a result reads that file. Nothing transcribes a number by hand.
+
+**Why.** This was found rather than foreseen. The headline figures in STATUS.md had been
+copied out of a terminal, and when the comparison was made reproducible it did not
+reproduce them — the recorded uplift was +9.8pp against a 58.2% baseline, and a run with
+every policy measured on the same held-out half gives +10.8pp against 58.4%. The direction
+and the argument are unchanged, but the earlier number came from a configuration nobody
+wrote down, which makes it indefensible whether or not it was right.
+
+A results file with its own provenance turns "here is our number" into "here is our number,
+here is the seed and the commit that produced it, run it yourself". That is the difference
+between a claim and a result.
+
+**Rejected.** Committing plots or a static HTML table as the source of truth. Both are
+renderings; both go stale silently the moment the harness changes, and neither can be
+diffed usefully.
+
+**Cost.** The full run takes minutes, so the file is regenerated deliberately rather than
+on every change — which means it can lag the code. The recorded commit is what makes that
+lag visible instead of invisible.

@@ -31,6 +31,7 @@ __all__ = [
     "SIGNATURE_HEADER",
     "FailedPaymentEvent",
     "InvalidSignature",
+    "event_from_entity",
     "parse_failed_payment",
     "verify_signature",
 ]
@@ -140,6 +141,17 @@ def parse_failed_payment(payload: dict[str, Any] | bytes | str) -> FailedPayment
     except (KeyError, TypeError) as exc:
         raise ValueError("webhook is missing payload.payment.entity") from exc
 
+    return event_from_entity(entity)
+
+
+def event_from_entity(entity: dict[str, Any]) -> FailedPaymentEvent:
+    """Normalise a Razorpay payment entity, however it arrived.
+
+    The same entity shape comes back from ``GET /payments`` as arrives inside a webhook
+    envelope, so both paths land here. That matters for the demo: polling the API and
+    receiving a webhook must produce an identical event, or the thing shown on camera is
+    not the thing the deployed path would handle.
+    """
     return FailedPaymentEvent(
         payment_id=str(entity.get("id", "")),
         order_id=entity.get("order_id"),

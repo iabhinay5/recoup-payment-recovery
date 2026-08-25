@@ -24,7 +24,7 @@ Roughly 2 of the 6 daily hours belong to it.
 
 ## Progress
 
-Updated 24 Aug 2026. Live state is in `STATUS.md`; this records what actually happened
+Updated 25 Aug 2026. Live state is in `STATUS.md`; this records what actually happened
 against what was planned.
 
 | Day | Planned | Actual |
@@ -36,7 +36,7 @@ against what was planned.
 | 6 | Guardrails, adversarial tests | done — guardrails cost nothing measurable |
 | 7 | Razorpay sandbox | done — real payment classified, taxonomy corrected by it |
 | 8 | LLM layer | done — normaliser, outreach, agent, all live on Groq |
-| 9 | Dashboard, **checkpoint C** | next |
+| 9 | Dashboard, **checkpoint C** | done — trace + dashboard; results made reproducible |
 | 10 | Sensitivity sweep, ablations | pending |
 | 11 | README, video, **submit** | pending |
 

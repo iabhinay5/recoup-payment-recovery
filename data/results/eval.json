@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-08-24T18:51:36+00:00",
+  "git_commit": "ce2e32118bde072bd0ea3364d8fd3aa72988b357",
+  "elapsed_seconds": 205.4,
+  "params": {
+    "n_customers": 40000,
+    "seed": 0,
+    "horizon_days": 14,
+    "train_fraction": 0.5,
+    "bandit_epochs": 3
+  },
+  "n_episodes": 20000,
+  "baseline": "fixed_1_3_5_7",
+  "calibration": {
+    "published_recovery": 0.58,
+    "observed_recovery": 0.58385,
+    "delta": 0.00385000000000002,
+    "tolerance": 0.03,
+    "verdict": "PASS",
+    "source": "Recurly, ~40M subscription transactions, Day-1/3/5/7, no contact"
+  },
+  "training": {
+    "epochs": 3,
+    "train_episodes": 20000,
+    "decisions": 86628,
+    "retry_pulls": [
+      2,
+      33960,
+      1988,
+      4,
+      11462,
+      2,
+      2,
+      8451
+    ],
+    "outreach_pulls": [
+      10453,
+      4355,
+      4920,
+      4564,
+      902,
+      2334,
+      2140,
+      1089
+    ]
+  },
+  "policies": [
+    {
+      "policy": "no_retry",
+      "n_episodes": 20000,
+      "recovery_rate": 0.0,
+      "revenue_recovery_rate": 0.0,
+      "revenue_recovered_paise": 0,
+      "revenue_total_paise": 60092164133,
+      "attempts_per_episode": 0.0,
+      "wasted_attempt_rate": 0.0,
+      "wasted_attempts": 0,
+      "total_attempts": 0,
+      "contacts_per_episode": 0.0,
+      "opt_out_rate": 0.0,
+      "refused_actions": 0,
+      "median_hours_to_recovery": null,
+      "wasted_by_class": {}
+    },
+    {
+      "policy": "fixed_1_3_5_7",
+      "n_episodes": 20000,
+      "recovery_rate": 0.58385,
+      "revenue_recovery_rate": 0.822274585778563,
+      "revenue_recovered_paise": 49412259371,
+      "revenue_total_paise": 60092164133,
+      "attempts_per_episode": 1.63275,
+      "wasted_attempt_rate": 0.6424131067217884,
+      "wasted_attempts": 20978,
+      "total_attempts": 32655,
+      "contacts_per_episode": 0.0,
+      "opt_out_rate": 0.0,
+      "refused_actions": 21912,
+      "median_hours_to_recovery": 24.0,
+      "wasted_by_class": {
+        "session_conditional": 9260,
+        "time_conditional": 10769,
+        "rail_conditional": 392,
+        "hard_declined": 557
+      }
+    },
+    {
+      "policy": "exponential_backoff",
+      "n_episodes": 20000,
+      "recovery_rate": 0.5956,
+      "revenue_recovery_rate": 0.8678479864958136,
+      "revenue_recovered_paise": 52150863647,
+      "revenue_total_paise": 60092164133,
+      "attempts_per_episode": 1.6764,
+      "wasted_attempt_rate": 0.6447148651873061,
+      "wasted_attempts": 21616,
+      "total_attempts": 33528,
+      "contacts_per_episode": 0.0,
+      "opt_out_rate": 0.0,
+      "refused_actions": 21786,
+      "median_hours_to_recovery": 2.0,
+      "wasted_by_class": {
+        "session_conditional": 9274,
+        "time_conditional": 10308,
+        "rail_conditional": 1476,
+        "hard_declined": 558
+      }
+    },
+    {
+      "policy": "aggressive",
+      "n_episodes": 20000,
+      "recovery_rate": 0.5975,
+      "revenue_recovery_rate": 0.8764258694933229,
+      "revenue_recovered_paise": 52666327200,
+      "revenue_total_paise": 60092164133,
+      "attempts_per_episode": 1.64925,
+      "wasted_attempt_rate": 0.6377141124753676,
+      "wasted_attempts": 21035,
+      "total_attempts": 32985,
+      "contacts_per_episode": 0.0,
+      "opt_out_rate": 0.0,
+      "refused_actions": 21,
+      "median_hours_to_recovery": 4.0,
+      "wasted_by_class": {
+        "session_conditional": 9274,
+        "time_conditional": 10284,
+        "rail_conditional": 919,
+        "hard_declined": 558
+      }
+    },
+    {
+      "policy": "outreach_only",
+      "n_episodes": 20000,
+      "recovery_rate": 0.3692,
+      "revenue_recovery_rate": 0.2826771054276552,
+      "revenue_recovered_paise": 16986679016,
+      "revenue_total_paise": 60092164133,
+      "attempts_per_episode": 0.6007,
+      "wasted_attempt_rate": 0.3853837189945064,
+      "wasted_attempts": 4630,
+      "total_attempts": 12014,
+      "contacts_per_episode": 2.49595,
+      "opt_out_rate": 0.0606,
+      "refused_actions": 123,
+      "median_hours_to_recovery": 72.0,
+      "wasted_by_class": {
+        "time_conditional": 3602,
+        "hard_declined": 326,
+        "rail_conditional": 160,
+        "session_conditional": 542
+      }
+    },
+    {
+      "policy": "taxonomy_aware",
+      "n_episodes": 20000,
+      "recovery_rate": 0.6706,
+      "revenue_recovery_rate": 0.8188697614898728,
+      "revenue_recovered_paise": 49207656111,
+      "revenue_total_paise": 60092164133,
+      "attempts_per_episode": 1.3582,
+      "wasted_attempt_rate": 0.5062582830216463,
+      "wasted_attempts": 13752,
+      "total_attempts": 27164,
+      "contacts_per_episode": 0.5047,
+      "opt_out_rate": 0.0124,
+      "refused_actions": 144,
+      "median_hours_to_recovery": 24.0,
+      "wasted_by_class": {
+        "time_conditional": 10746,
+        "rail_conditional": 2037,
+        "hard_declined": 557,
+        "session_conditional": 412
+      }
+    },
+    {
+      "policy": "bandit_greedy",
+      "n_episodes": 20000,
+      "recovery_rate": 0.6915,
+      "revenue_recovery_rate": 0.8566994108592757,
+      "revenue_recovered_paise": 51480921610,
+      "revenue_total_paise": 60092164133,
+      "attempts_per_episode": 1.2582,
+      "wasted_attempt_rate": 0.4504053409632809,
+      "wasted_attempts": 11334,
+      "total_attempts": 25164,
+      "contacts_per_episode": 0.5047,
+      "opt_out_rate": 0.0129,
+      "refused_actions": 93,
+      "median_hours_to_recovery": 12.0,
+      "wasted_by_class": {
+        "time_conditional": 9063,
+        "rail_conditional": 1303,
+        "hard_declined": 557,
+        "session_conditional": 411
+      }
+    }
+  ]
+}

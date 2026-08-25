@@ -22,9 +22,8 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
-from recoup.gateway import RazorpayClient
-from recoup.guardrails import Guardrails, idempotency_key
-from recoup.taxonomy import lookup
+from recoup.gateway import RazorpayClient, event_from_entity
+from recoup.trace import explain
 
 BOLD = "\033[1m"
 DIM = "\033[2m"
@@ -90,58 +89,28 @@ def show(label: str, value: str, colour: str = "") -> None:
 
 
 def describe_failure(payment: dict[str, Any]) -> None:
-    """Print the decision chain for one real failed payment."""
-    reason_code = payment.get("error_reason") or "__unknown__"
-    reason = lookup(reason_code)
+    """Print the decision chain for one real failed payment.
 
-    print()
-    print(f"{BOLD}1. What Razorpay reported{OFF}")
-    show("payment id", str(payment.get("id")))
-    show("amount", f"Rs {int(payment.get('amount', 0)) / 100:,.2f}")
-    show("method", str(payment.get("method")))
-    show("error_reason", reason_code, YELLOW)
-    show("error_description", str(payment.get("error_description") or "-"))
-    show("error_source", str(payment.get("error_source") or "-"))
+    The chain comes from ``recoup.trace.explain`` — the same call the dashboard renders —
+    so the terminal and the screen cannot describe the same payment differently. See
+    docs/DECISIONS.md ADR-009.
+    """
+    trace = explain(event_from_entity(payment))
+    colour = {"pass": GREEN, "refuse": GREEN, "defer": YELLOW, "info": ""}
 
-    print()
-    print(f"{BOLD}2. How Recoup classified it{OFF}")
-    known = "known" if reason.code != "__unknown__" else "UNRECOGNISED - conservative default"
-    show("taxonomy entry", known)
-    show("decline class", reason.decline_class.value, GREEN)
-    show("remedy", reason.remedy.value, GREEN)
-    show("attempts permitted", str(reason.max_attempts))
-    show("minimum backoff", f"{reason.min_backoff_hours:g}h")
-    print(f"  {DIM}{reason.description}{OFF}")
+    for index, step in enumerate(trace.steps, start=1):
+        print()
+        print(f"{BOLD}{index}. {step.title}{OFF}")
+        show("verdict", step.verdict, colour.get(step.kind, ""))
+        for label, value in step.fields:
+            show(label, value)
+        print(f"  {DIM}{step.detail}{OFF}")
 
-    print()
-    print(f"{BOLD}3. What the guardrails say{OFF}")
-    guards = Guardrails()
-    key = idempotency_key(str(payment.get("id")), 0, str(payment.get("method")))
-    verdict = guards.check_retry(key, 0, reason_code, instrument_expired=False)
-    if verdict.allowed:
-        show("first retry", "ALLOWED", GREEN)
-        guards.record_charge(key)
-        replay = guards.check_retry(key, 0, reason_code, instrument_expired=False)
-        assert replay.refusal is not None
-        show("same charge replayed", f"REFUSED - {replay.refusal.rule.value}", GREEN)
-    else:
-        assert verdict.refusal is not None
-        show("retry", f"REFUSED - {verdict.refusal.rule.value}", GREEN)
-        print(f"  {DIM}{verdict.refusal.detail}{OFF}")
-
-    print()
-    print(f"{BOLD}4. What a fixed schedule would have done{OFF}")
-    if reason.max_attempts == 0:
-        print(f"  {DIM}Retried on days 1, 3, 5 and 7. All four attempts structurally")
-        print(f"  incapable of succeeding, because {reason_code} cannot be resolved by")
-        print(f"  retrying. Recoup spends zero.{OFF}")
-    elif reason.remedy.value == "customer_session":
-        print(f"  {DIM}Retried silently on days 1, 3, 5 and 7 with probability zero each")
-        print("  time. This needs the customer back in a session, so Recoup sends")
-        print(f"  outreach instead.{OFF}")
-    else:
-        print(f"  {DIM}Retried on a fixed schedule regardless of context. Recoup picks the")
-        print(f"  timing from the decline reason and current rail health.{OFF}")
+    if trace.notes:
+        print()
+        print(f"{BOLD}What this payload could not tell us{OFF}")
+        for note in trace.notes:
+            print(f"  {DIM}- {note}{OFF}")
 
 
 def main() -> int:
