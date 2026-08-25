@@ -18,6 +18,7 @@ reproducible rather than merely repeatable.
 
 from __future__ import annotations
 
+import hashlib
 import statistics
 from collections import Counter
 from dataclasses import dataclass, field
@@ -32,7 +33,23 @@ from recoup.sim.params import SimParams
 from recoup.sim.rails import Outage, RailHealth, generate_outages
 from recoup.taxonomy import DeclineClass, lookup
 
-__all__ = ["EvalResult", "World", "build_world", "compare", "evaluate"]
+__all__ = ["EvalResult", "World", "build_world", "compare", "evaluate", "stable_seed"]
+
+
+def stable_seed(text: str) -> int:
+    """A seed derived from ``text`` that is identical in every process.
+
+    ``hash()`` on a ``str`` is salted per process by ``PYTHONHASHSEED``. An RNG seeded
+    with it is therefore stable *within* one run and different *between* runs, which is
+    close to invisible: every policy in a single process meets the same outage, so the
+    comparison stays internally valid and only the published number moves. It was moving
+    the headline uplift between +10.7pp and +10.8pp before this function existed.
+
+    A digest carries no per-process salt, so a results file can be regenerated and
+    compared against its predecessor — which is the whole promise of ADR-010.
+    """
+    digest = hashlib.blake2b(text.encode("utf-8"), digest_size=8).digest()
+    return int.from_bytes(digest, "big") % (2**31)
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,7 +182,8 @@ def _episode_rails(world: World, payment: FailedPayment, customer: Customer) -> 
     )
     # Seeded from the payment id so the outage is stable across policies — otherwise a
     # policy would be rewarded or punished by a different outage than its rivals faced.
-    rng = np.random.default_rng([world.params.seed, hash(payment.id) % (2**31)])
+    # stable_seed rather than hash() so it is also stable across *runs*; see its docstring.
+    rng = np.random.default_rng([world.params.seed, stable_seed(payment.id)])
     remaining = float(rng.exponential(world.params.outage_mean_duration_hours))
     return world.rails.with_outage(Outage(instrument.bank_id, -0.01, remaining + 0.01))
 

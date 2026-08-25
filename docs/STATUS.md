@@ -15,24 +15,36 @@ from `data/results/eval.json`, which records its own seed, parameters and commit
 |---|---|---|---|---|
 | fixed 1/3/5/7 *(baseline)* | 58.4% | 82.2% | 1.63 | 64.2% |
 | exponential backoff | 59.6% | 86.8% | 1.68 | 64.5% |
-| aggressive retry | 59.8% | 87.6% | 1.65 | 63.8% |
+| aggressive retry | 59.7% | 87.6% | 1.65 | 63.8% |
 | outreach only | 36.9% | 28.3% | 0.60 | 38.5% |
-| taxonomy routing | 67.1% | 81.9% | 1.36 | 50.6% |
-| **routing + bandit** | **69.2%** | **85.7%** | **1.26** | **45.0%** |
+| taxonomy routing | 67.1% | 81.9% | 1.36 | 50.7% |
+| **routing + bandit** | **69.1%** | **85.6%** | **1.26** | **45.2%** |
 
-**+10.8 points of recovery on fewer attempts.** Calibration gate passes: the simulator
+**+10.7 points of recovery on fewer attempts.** Calibration gate passes: the simulator
 reproduces Recurly's published 58.0% at 58.4%, within the ±3pp tolerance.
 
-### This is not the number that was here yesterday, and that matters
+### The number moved twice, and the second time is the one that mattered
 
-Yesterday's file recorded **+9.8pp against a 58.2% baseline**. That figure was copied out
-of a terminal from a run whose configuration was never written down, and it does not
-reproduce. Making the comparison reproducible — every policy scored on the same held-out
-half, parameters and seed recorded — gives **+10.8pp against 58.4%**.
+It recorded **+9.8pp against 58.2%** on day 8, copied out of a terminal from a run whose
+configuration was never written down. Day 9 made the comparison reproducible and got
+**+10.8pp against 58.4%**.
 
-The uplift got *larger*, so nothing about the argument weakens. But the old number was
-indefensible regardless of whether it happened to be right, which is the whole reason
-ADR-010 now exists. **Do not quote a figure that is not in `data/results/eval.json`.**
+That second figure did not reproduce either. Re-running the identical command gave a
+different answer, because `_episode_rails` seeded its generator from `hash(payment.id)` and
+Python salts `hash()` on a str per process. Every policy inside one run met the same
+outage, so each comparison was internally valid and only the published figure drifted —
+which is why nothing caught it. The uplift moved between +10.7pp and +10.8pp depending on
+the process.
+
+`stable_seed()` replaces it with a blake2b digest. **Two independent full runs now agree on
+every metric, to the last integer.** The honest number is **+10.7pp**, and it is now a
+number that can be checked rather than believed.
+
+`tests/test_harness.py` re-runs the evaluation under three `PYTHONHASHSEED` values and
+fails if they disagree, which guards any future unstable hash rather than this one. The
+harness had no test file at all before this.
+
+**Do not quote a figure that is not in `data/results/eval.json`.**
 
 ---
 
@@ -51,7 +63,7 @@ ADR-010 now exists. **Do not quote a figure that is not in `data/results/eval.js
 | 9 | **Sensitivity sweep + ablations** | **day 10 — not started** |
 | 10 | **README, architecture doc, video, submission** | **day 11 — not started** |
 
-**241 tests passing.** ruff, ruff format, mypy strict all clean.
+**247 tests passing.** ruff, ruff format, mypy strict all clean.
 
 *(The taxonomy has 21 codes, not the 26 this file claimed yesterday. Counted, not
 remembered: `all_reasons()` returns 21 across 5 classes.)*
@@ -113,19 +125,36 @@ URL (https://claude.ai/code/artifact/b7458ae4-ba93-4758-90f8-f3c980eb9320).
 
 ## Open risks
 
-**A documented remedy has no reachable code path.** `card_expired` carries
-`Remedy.NEW_INSTRUMENT`, and both `TaxonomyAware` and `BanditPolicy` contain a branch that
-switches to another instrument. That branch is gated on `remaining_attempts > 0`, and the
-taxonomy *requires* every `NEVER_RETRYABLE` code to have `max_attempts == 0`. So it can
-never run, and the guardrail layer would refuse the charge on `ATTEMPT_CAP` anyway: the cap
-counts attempts against the **decline code**, not against the instrument that produced it.
+**A documented remedy has no reachable code path — day 9 was right, for a narrower
+reason.** Measured, not read: over 8,000 simulated customers both `TaxonomyAware` and
+`BanditPolicy` return **zero** instrument switches. But the branch is not reachable-and-
+refused; it is never entered. It sits inside the `NEVER_RETRYABLE` case in both policies
+(`taxonomy_aware.py:70`, `bandit.py:186`), gated on `remaining_attempts > 0`, and every
+`NEVER_RETRYABLE` code has `max_attempts == 0` by construction.
 
-The question is whether the cap means *"no attempt on this payment"* or *"no attempt on
-this instrument"*. The second reading is what `Remedy.NEW_INSTRUMENT` and both policies
-plainly intended. Resolving it would give never-retryable declines a recovery path and
-would probably *increase* the measured uplift — so it is a day-10 decision, not a quiet
-fix. Pinned by `test_an_alternative_instrument_does_not_currently_change_the_decision` so
-it cannot be lost. **This is a likely panel question: "show me the new-instrument path."**
+Underneath it is a real inconsistency. Three codes carry `Remedy.NEW_INSTRUMENT`:
+
+| code | class | max_attempts | what the policy actually does |
+|---|---|---|---|
+| `card_expired` | never_retryable | 0 | outreach carrying a payment link |
+| `card_declined` | hard_declined | 1 | **one silent retry on the same card** |
+| `payment_failed` | hard_declined | 1 | **one silent retry on the same card** |
+
+The two hard-declined codes take `_hard_declined`, which never consults the remedy: the
+taxonomy says *new instrument* and the policy retries the one that just failed. Razorpay's
+published resolution for `card_declined` is "advise your customer to attempt the payment
+again using another card" — which sides with the remedy, not with the retry.
+
+Measured cost: **245 such retries per 8,000 customers**, so this is a small effect and not a
+headline one. Ablate it on day 10; routing those two codes to outreach is what the taxonomy
+already promises and what Razorpay documents.
+
+The `card_expired` path, by contrast, is now *validated* rather than merely untested. It
+sends outreach carrying a payment link, and Razorpay's own failed-subscription flow sends
+"a link that the customer can use to change the card details" — same remedy, same
+mechanism. **Panel answer: we do not silently move a charge to another card, because
+Razorpay doesn't either.** Pinned by
+`test_an_alternative_instrument_does_not_currently_change_the_decision`.
 
 **The +10.8pp magnitude is still not sensitivity-tested.** It rests on three invented
 parameters — the session-conditional share of the decline mix, `outreach_response_rate`,

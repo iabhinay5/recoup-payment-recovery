@@ -60,11 +60,11 @@ BASELINE = "fixed_1_3_5_7"
 """The policy every uplift is quoted against. Recurly's published schedule."""
 
 
-def git_commit() -> str | None:
-    """The commit these numbers were produced under, if this is a checkout."""
+def _git(*args: str) -> str | None:
+    """Run a git command, or return None if this is not a usable checkout."""
     try:
         out = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
+            ["git", *args],
             capture_output=True,
             text=True,
             timeout=5,
@@ -72,7 +72,24 @@ def git_commit() -> str | None:
         )
     except (OSError, subprocess.SubprocessError):
         return None
-    return out.stdout.strip() or None if out.returncode == 0 else None
+    return out.stdout.strip() if out.returncode == 0 else None
+
+
+def git_commit() -> str | None:
+    """The commit these numbers were produced under, if this is a checkout."""
+    return _git("rev-parse", "HEAD") or None
+
+
+def git_dirty() -> bool | None:
+    """Whether uncommitted changes were present when these numbers were produced.
+
+    Without this the recorded commit promises more than it can keep. ADR-010 offers "here
+    is the commit, run it yourself", and from a dirty tree that is not something a reader
+    can actually do. A results file produced with local edits is still useful; one that
+    does not admit to them is not.
+    """
+    status = _git("status", "--porcelain")
+    return None if status is None else bool(status)
 
 
 def as_dict(result: EvalResult) -> dict[str, Any]:
@@ -141,6 +158,7 @@ def run(customers: int, seed: int, epochs: int) -> dict[str, Any]:
     document: dict[str, Any] = {
         "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "git_commit": git_commit(),
+        "git_dirty": git_dirty(),
         "elapsed_seconds": round(time.time() - started, 1),
         "params": {
             "n_customers": customers,

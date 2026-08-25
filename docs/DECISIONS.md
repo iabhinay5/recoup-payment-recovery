@@ -246,3 +246,19 @@ diffed usefully.
 **Cost.** The full run takes minutes, so the file is regenerated deliberately rather than
 on every change — which means it can lag the code. The recorded commit is what makes that
 lag visible instead of invisible.
+
+**Postscript — writing the file was not sufficient.** The first results file this ADR
+produced did not reproduce. `_episode_rails` seeded its per-episode generator from
+`hash(payment.id)`, and Python salts `hash()` on a str per process, so the outage drawn for
+an episode differed between runs. The failure was well hidden: every policy within one
+process met the same outage, so the comparison stayed internally valid and only the
+published figure moved — between +10.7pp and +10.8pp. A results file makes a number
+*checkable*; it does not make it *stable*, and the two were conflated here.
+
+`stable_seed()` uses a blake2b digest, and `tests/test_harness.py` re-runs the evaluation
+under three `PYTHONHASHSEED` values and fails if they disagree. That guards the property
+rather than the instance, so the next unstable hash is caught by the same test.
+
+The file also records `git_dirty` now. The commit alone overstated what it promised: this
+ADR offers "here is the commit, run it yourself", and from a tree with uncommitted changes
+a reader cannot.
