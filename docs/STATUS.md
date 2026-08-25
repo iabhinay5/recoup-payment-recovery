@@ -1,6 +1,6 @@
 # Status — end of 25 Aug 2026
 
-**Day 9 of 11 complete. Checkpoint C reached. Still one day ahead of the plan.**
+**Day 10 of 11 complete. Still one day ahead of the plan.**
 Deadline **5 Sep**; target submission **4 Sep**, leaving one buffer day.
 
 ---
@@ -60,10 +60,10 @@ harness had no test file at all before this.
 | 6 | Razorpay integration — test-mode client, signed webhooks | done |
 | 7 | LLM layer — normaliser, outreach writer, agent | done |
 | 8 | Dashboard — live feed, decision trace, results, guardrail ledger | **done** |
-| 9 | **Sensitivity sweep + ablations** | **day 10 — not started** |
+| 9 | Sensitivity sweep + ablations — 45 configurations, 3 ablations | done |
 | 10 | **README, architecture doc, video, submission** | **day 11 — not started** |
 
-**247 tests passing.** ruff, ruff format, mypy strict all clean.
+**274 tests passing.** ruff, ruff format, mypy strict all clean.
 
 *(The taxonomy has 21 codes, not the 26 this file claimed yesterday. Counted, not
 remembered: `all_reasons()` returns 21 across 5 classes.)*
@@ -184,9 +184,50 @@ can do that part.
 
 ---
 
-## Day 10 plan
+## What day 10 established
 
-Sensitivity sweeps across every uncertain parameter, and ablations: taxonomy-aware vs not,
-bank-health-aware vs not, bandit vs fixed. Decide the never-retryable cap question above
-before the sweep, because it changes what is being swept. Regenerate
-`data/results/eval.json` and `docs/benchmark.html` from the result, and write RESULTS.md.
+**The uplift survives every parameter nobody could source.** 45 configurations, nine
+uncertain parameters walked across their full plausible ranges, the bandit retrained at
+every point. The uplift never goes negative: **+6.19pp at worst, +15.18pp at best**. The
+worst case is `outreach_response_rate` at 0.15, the pessimistic end of the parameter that
+most directly drives the mechanism. That turns the claim from "+10.7pp under our
+assumptions" into "at least +6.2pp under any plausible assumption".
+
+Two of 45 configurations fall outside the calibration gate, both at `shortfall_high` >= 2.55
+— the fitted parameter, swept widest on purpose. They are reported in `docs/RESULTS.md`
+rather than dropped, and no claim rests on them.
+
+**The ablations say which part earns it.** Each variant differs from the routing policy by
+exactly one branch:
+
+| removed | recovery | worth |
+|---|---|---|
+| session-awareness | 57.8% — *below the 58.1% baseline* | **+9.46pp** |
+| rail-awareness | 63.4% | +3.87pp |
+| following Razorpay's guidance | 67.1% | costs only 0.22pp |
+
+Strip out session-awareness and the policy is worse than the fixed schedule it is supposed
+to beat. **That is the pitch**: nearly the whole advantage comes from recognising that some
+declines need the customer back rather than another retry — not from clever timing.
+
+**Two swept parameters were measuring nothing.** `contact_fatigue_halflife_hours` was read
+by no code at all, and `outage_rate_per_bank_day` had been superseded by NPCI's per-bank
+rates on `Bank`. Ten of the original 55 configurations were inert, and
+`audit_parameters.py` reported OK throughout, because it checks that invented parameters
+are *listed* in the sweep, not that the simulator *reads* them. Both are removed;
+`TestEverySweptParameterIsLive` now fails if a swept parameter does not move the outcome.
+Removing them changed no measured number — verified by re-running the evaluation and
+diffing against the committed file: zero mismatches.
+
+**`docs/RESULTS.md` is generated, not written.** `scripts/render_results.py` renders it
+from `eval.json` and `sweep.json`; `--check` fails if they have drifted. That check and
+`audit_parameters.py` now both run in CI, where neither ran before.
+
+---
+
+## Day 11 plan
+
+README and ARCHITECTURE.md, then record the video and submit. The numbers all come from
+`docs/RESULTS.md` — do not retype any of them. Regenerate `docs/benchmark.html` from
+`data/results/eval.json` and redeploy to the same artifact URL
+(https://claude.ai/code/artifact/b7458ae4-ba93-4758-90f8-f3c980eb9320).

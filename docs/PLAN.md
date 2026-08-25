@@ -31,17 +31,22 @@ against what was planned.
 |---|---|---|
 | 0–1 | Planning, taxonomy | done as planned |
 | 2 | Simulator core | done |
-| 3–4 | Calibration, baselines, **checkpoint A** | done in one pass — gate passes at 58.2% vs 58.0% |
-| 5 | Bandit, **checkpoint B** | done — 68.0%, +9.8pp |
+| 3–4 | Calibration, baselines, **checkpoint A** | done in one pass — gate passes at 58.4% vs 58.0% |
+| 5 | Bandit, **checkpoint B** | done — beats the routing policy; current figures in `docs/RESULTS.md` |
 | 6 | Guardrails, adversarial tests | done — guardrails cost nothing measurable |
 | 7 | Razorpay sandbox | done — real payment classified, taxonomy corrected by it |
 | 8 | LLM layer | done — normaliser, outreach, agent, all live on Groq |
 | 9 | Dashboard, **checkpoint C** | done — trace + dashboard; results made reproducible |
-| 10 | Sensitivity sweep, ablations | pending |
+| 10 | Sensitivity sweep, ablations | done — 45 configurations, uplift never below +6.2pp; two inert parameters found and removed |
 | 11 | README, video, **submit** | pending |
 
 **One day ahead.** Days 3 and 4 collapsed into one because the measurement harness had to
 exist before calibration could be checked — a small reordering, and the right one.
+
+The figures above were rewritten on day 10. Days 3–5 originally recorded 58.2% and +9.8pp,
+copied from a terminal. Those numbers did not reproduce — see ADR-010 and its postscript.
+**Every number in this repository now comes from `data/results/`, and `docs/RESULTS.md` is
+generated from it rather than typed.**
 
 ## Checkpoints
 

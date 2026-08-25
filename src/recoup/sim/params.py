@@ -146,15 +146,17 @@ class SimParams:
     # opt-outs and churn. Without this the optimal policy degenerates into contacting
     # everyone constantly, which is exactly the failure mode real dunning systems have.
     opt_out_hazard_per_contact: float = 0.04
-    contact_fatigue_halflife_hours: float = 72.0
     # Probability a customer who receives outreach returns to complete a payment.
     outreach_response_rate: float = 0.28
 
     # --- Rail health (calibrated from NPCI data on day 3) ----------------------------
     # T1 source for the rates; SWEPT for outage duration, which NPCI does not publish.
+    # Per-bank outage frequencies are not here: they live on each ``Bank``, taken from
+    # NPCI's own per-bank incident counts. A single population-wide rate was tried and
+    # removed — it was dominated by hundreds of tiny cooperative banks and understated
+    # SBI's real rate by two orders of magnitude.
     baseline_technical_decline_rate: float = 0.008
     outage_mean_duration_hours: float = 2.5
-    outage_rate_per_bank_day: float = 0.05
 
     # --- Episode mechanics -----------------------------------------------------------
     horizon_days: int = 14
@@ -216,13 +218,6 @@ SWEPT_PARAMETERS: dict[str, SweepRange] = {
         "NPCI publishes decline rates but not outage durations. Determines how long a "
         "rail-aware policy should defer.",
     ),
-    "outage_rate_per_bank_day": SweepRange(
-        0.01,
-        0.15,
-        0.05,
-        "Frequency of bank outages. Together with duration this sets how much a "
-        "rail-aware policy can win.",
-    ),
     "shortfall_high": SweepRange(
         1.2,
         3.0,
@@ -251,13 +246,6 @@ SWEPT_PARAMETERS: dict[str, SweepRange] = {
         0.05,
         "Residual balance at the worst point of the salary cycle. Sets the floor on how "
         "badly a late-cycle retry can do.",
-    ),
-    "contact_fatigue_halflife_hours": SweepRange(
-        24.0,
-        168.0,
-        72.0,
-        "How quickly customers forget being contacted. Bounds how closely outreach can "
-        "be spaced before it costs more than it recovers.",
     ),
     "salary_day_jitter": SweepRange(
         0.0,

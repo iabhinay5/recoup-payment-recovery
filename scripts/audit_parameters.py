@@ -39,9 +39,6 @@ LEDGER: dict[str, Provenance] = {
     "outage_mean_duration_hours": Provenance(
         "MEASURED", "NPCI downtime, 300 incidents over 11 months: 2.77h mean"
     ),
-    "outage_rate_per_bank_day": Provenance(
-        "MEASURED", "NPCI downtime; per-bank rates, SBI 0.0988/day"
-    ),
     "salary_day_of_month": Provenance(
         "MEASURED",
         "NPCI daily statistics, 212 days: ticket index peaks day 2, +19.7% vs late month",
@@ -69,7 +66,6 @@ LEDGER: dict[str, Provenance] = {
     "outreach_response_rate": Provenance(
         "INVENTED", "published dunning figures disagree: 32%, 42%, 47.6%"
     ),
-    "contact_fatigue_halflife_hours": Provenance("INVENTED", "no source"),
     "salary_day_jitter": Provenance("INVENTED", "no source on salary date dispersion"),
     "horizon_days": Provenance("INVENTED", "design choice: 2x the Recurly schedule length"),
     "n_customers": Provenance("INVENTED", "sample size, not a modelling parameter"),

@@ -13,10 +13,13 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from dataclasses import replace
+
+import pytest
 
 from recoup.eval.harness import build_world, evaluate, stable_seed
 from recoup.policies import TaxonomyAware
-from recoup.sim.params import SimParams
+from recoup.sim.params import SWEPT_PARAMETERS, SimParams
 
 SMALL = SimParams(n_customers=400, seed=0)
 
@@ -94,3 +97,44 @@ def _evaluate_in_subprocess(hash_seed: str) -> str:
         timeout=300,
     )
     return out.stdout.strip()
+
+
+class TestEverySweptParameterIsLive:
+    """A swept parameter that nothing reads accounts for nothing.
+
+    ``scripts/audit_parameters.py`` checks that every invented parameter appears in
+    ``SWEPT_PARAMETERS``, and passing that check reads as "the uncertainty in this
+    parameter has been accounted for". It does not check that the simulator consumes it.
+    Two did not: ``contact_fatigue_halflife_hours`` was never read anywhere, and
+    ``outage_rate_per_bank_day`` had been superseded by NPCI's per-bank rates on ``Bank``.
+    Ten of the sweep's configurations were measuring nothing, and the audit still said OK.
+    """
+
+    @pytest.mark.parametrize("name", sorted(SWEPT_PARAMETERS))
+    def test_moving_it_changes_the_outcome(self, name: str) -> None:
+        span = SWEPT_PARAMETERS[name]
+        base = SimParams(n_customers=2000, seed=0)
+
+        low = _signature(replace(base, **{name: span.low}))
+        high = _signature(replace(base, **{name: span.high}))
+
+        assert low != high, (
+            f"{name} is swept from {span.low} to {span.high} but nothing in the "
+            f"simulator reads it — sweeping it measures nothing, and the audit "
+            f"would still report the parameter as accounted for"
+        )
+
+
+def _signature(params: SimParams) -> tuple[object, ...]:
+    """Enough of an evaluation to detect any effect at all.
+
+    Uses ``TaxonomyAware`` because it is the policy that consults the most signals: a
+    rail-health parameter leaves the fixed-schedule baseline completely unmoved.
+    """
+    result = evaluate(TaxonomyAware(), build_world(params))
+    return (
+        result.recovered,
+        result.total_attempts,
+        result.total_contacts,
+        tuple(sorted(result.wasted_by_class.items())),
+    )

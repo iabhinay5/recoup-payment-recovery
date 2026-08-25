@@ -35,3 +35,15 @@ jobs:
 
       - name: Tests
         run: python -m pytest --cov=recoup --cov-report=term-missing
+
+      # The provenance ledger. Exits non-zero if an invented parameter is missing from the
+      # sensitivity sweep, because an unswept invented parameter can silently carry a
+      # headline result.
+      - name: Parameter provenance
+        run: python scripts/audit_parameters.py
+
+      # docs/RESULTS.md is generated from the results files, never written by hand. This
+      # fails if the two have drifted apart — which is how the headline number moved three
+      # times without the system changing.
+      - name: Results document is current
+        run: python scripts/render_results.py --check

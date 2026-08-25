@@ -1,0 +1,704 @@
+{
+  "generated_at": "2026-08-25T16:11:28+00:00",
+  "git_commit": "33cf6d77d518f724a9ac37dc2cacfb0e94997bec",
+  "git_dirty": true,
+  "elapsed_seconds": 640.9,
+  "config": {
+    "n_customers": 16000,
+    "seed": 0,
+    "bandit_epochs": 2,
+    "points_per_parameter": 5,
+    "train_fraction": 0.5
+  },
+  "baseline": "fixed_1_3_5_7",
+  "calibration_tolerance": 0.03,
+  "ablations": {
+    "fixed_1_3_5_7": {
+      "policy": "fixed_1_3_5_7",
+      "recovery_rate": 0.58075,
+      "revenue_recovery_rate": 0.8438255387712765,
+      "attempts_per_episode": 1.631,
+      "wasted_attempt_rate": 0.6439301042305334,
+      "contacts_per_episode": 0.0,
+      "opt_out_rate": 0.0,
+      "wasted_by_class": {
+        "session_conditional": 3764,
+        "time_conditional": 4251,
+        "rail_conditional": 151,
+        "hard_declined": 236
+      }
+    },
+    "taxonomy_aware": {
+      "policy": "taxonomy_aware",
+      "recovery_rate": 0.672875,
+      "revenue_recovery_rate": 0.83971431734575,
+      "attempts_per_episode": 1.354125,
+      "wasted_attempt_rate": 0.5030924028431644,
+      "contacts_per_episode": 0.51475,
+      "opt_out_rate": 0.012625,
+      "wasted_by_class": {
+        "time_conditional": 4242,
+        "rail_conditional": 805,
+        "hard_declined": 236,
+        "session_conditional": 167
+      }
+    },
+    "ablation_rail_blind": {
+      "policy": "ablation_rail_blind",
+      "recovery_rate": 0.634125,
+      "revenue_recovery_rate": 0.8377910775548165,
+      "attempts_per_episode": 1.488875,
+      "wasted_attempt_rate": 0.5740911762236588,
+      "contacts_per_episode": 0.51475,
+      "opt_out_rate": 0.012625,
+      "wasted_by_class": {
+        "time_conditional": 4242,
+        "rail_conditional": 2193,
+        "hard_declined": 236,
+        "session_conditional": 167
+      }
+    },
+    "ablation_session_blind": {
+      "policy": "ablation_session_blind",
+      "recovery_rate": 0.57825,
+      "revenue_recovery_rate": 0.8359081674974763,
+      "attempts_per_episode": 1.710875,
+      "wasted_attempt_rate": 0.6620150507781106,
+      "contacts_per_episode": 0.09725,
+      "opt_out_rate": 0.00325,
+      "wasted_by_class": {
+        "session_conditional": 3764,
+        "time_conditional": 4242,
+        "rail_conditional": 819,
+        "hard_declined": 236
+      }
+    },
+    "ablation_remedy_routed": {
+      "policy": "ablation_remedy_routed",
+      "recovery_rate": 0.670625,
+      "revenue_recovery_rate": 0.839630117037115,
+      "attempts_per_episode": 1.322125,
+      "wasted_attempt_rate": 0.49276732532854306,
+      "contacts_per_episode": 0.5465,
+      "opt_out_rate": 0.013,
+      "wasted_by_class": {
+        "time_conditional": 4242,
+        "rail_conditional": 803,
+        "session_conditional": 167
+      }
+    },
+    "bandit_greedy": {
+      "policy": "bandit_greedy",
+      "recovery_rate": 0.6875,
+      "revenue_recovery_rate": 0.88395602230844,
+      "attempts_per_episode": 1.24575,
+      "wasted_attempt_rate": 0.4481236203090508,
+      "contacts_per_episode": 0.514125,
+      "opt_out_rate": 0.015125,
+      "wasted_by_class": {
+        "time_conditional": 3837,
+        "rail_conditional": 226,
+        "hard_declined": 236,
+        "session_conditional": 167
+      }
+    }
+  },
+  "sensitivity": [
+    {
+      "parameter": "opt_out_hazard_per_contact",
+      "note": "How readily customers disengage after repeated contact. Drives the cost side of the reward, so the optimal contact frequency is highly sensitive to it.",
+      "low": 0.01,
+      "high": 0.1,
+      "default": 0.04,
+      "points": [
+        {
+          "value": 0.01,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.67475,
+          "bandit_recovery": 0.689625,
+          "uplift_pp": 10.887500000000006,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.2535,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.0325,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.6735,
+          "bandit_recovery": 0.6875,
+          "uplift_pp": 10.675,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.24425,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.05500000000000001,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.671375,
+          "bandit_recovery": 0.683125,
+          "uplift_pp": 10.237499999999999,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.24375,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.0775,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.668125,
+          "bandit_recovery": 0.684125,
+          "uplift_pp": 10.337499999999999,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.23775,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.1,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.666625,
+          "bandit_recovery": 0.683,
+          "uplift_pp": 10.225000000000007,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.23175,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        }
+      ]
+    },
+    {
+      "parameter": "outreach_response_rate",
+      "note": "Fraction of contacted customers who return to complete payment. Bounds how much any outreach-based strategy can achieve.",
+      "low": 0.15,
+      "high": 0.45,
+      "default": 0.28,
+      "points": [
+        {
+          "value": 0.15,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.628125,
+          "bandit_recovery": 0.642625,
+          "uplift_pp": 6.187500000000002,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.1925,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.225,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.65575,
+          "bandit_recovery": 0.67125,
+          "uplift_pp": 9.050000000000002,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.224625,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.30000000000000004,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.677375,
+          "bandit_recovery": 0.691625,
+          "uplift_pp": 11.087500000000006,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.254375,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.375,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.697875,
+          "bandit_recovery": 0.71175,
+          "uplift_pp": 13.100000000000001,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.27975,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.45000000000000007,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.71675,
+          "bandit_recovery": 0.7325,
+          "uplift_pp": 15.175000000000004,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.298625,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        }
+      ]
+    },
+    {
+      "parameter": "balance_depletion_rate",
+      "note": "How fast balances fall through the salary cycle. Determines how much signal there is in waiting for a payday.",
+      "low": 0.7,
+      "high": 0.98,
+      "default": 0.9,
+      "points": [
+        {
+          "value": 0.7,
+          "baseline_recovery": 0.57075,
+          "taxonomy_recovery": 0.66225,
+          "bandit_recovery": 0.683875,
+          "uplift_pp": 11.312500000000004,
+          "baseline_attempts": 1.648875,
+          "bandit_attempts": 1.25875,
+          "calibration_delta": -0.00924999999999998,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.77,
+          "baseline_recovery": 0.57025,
+          "taxonomy_recovery": 0.660875,
+          "bandit_recovery": 0.690125,
+          "uplift_pp": 11.987499999999995,
+          "baseline_attempts": 1.6505,
+          "bandit_attempts": 1.242625,
+          "calibration_delta": -0.009749999999999925,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.84,
+          "baseline_recovery": 0.57225,
+          "taxonomy_recovery": 0.664375,
+          "bandit_recovery": 0.682125,
+          "uplift_pp": 10.987499999999994,
+          "baseline_attempts": 1.645625,
+          "bandit_attempts": 1.249875,
+          "calibration_delta": -0.007749999999999924,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.9099999999999999,
+          "baseline_recovery": 0.582,
+          "taxonomy_recovery": 0.675,
+          "bandit_recovery": 0.68375,
+          "uplift_pp": 10.175,
+          "baseline_attempts": 1.628625,
+          "bandit_attempts": 1.2275,
+          "calibration_delta": 0.0020000000000000018,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.98,
+          "baseline_recovery": 0.592125,
+          "taxonomy_recovery": 0.68275,
+          "bandit_recovery": 0.685125,
+          "uplift_pp": 9.299999999999997,
+          "baseline_attempts": 1.60725,
+          "bandit_attempts": 1.25325,
+          "calibration_delta": 0.012125000000000052,
+          "calibration_ok": true
+        }
+      ]
+    },
+    {
+      "parameter": "outage_mean_duration_hours",
+      "note": "NPCI publishes decline rates but not outage durations. Determines how long a rail-aware policy should defer.",
+      "low": 0.5,
+      "high": 8.0,
+      "default": 2.5,
+      "points": [
+        {
+          "value": 0.5,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.67675,
+          "bandit_recovery": 0.68725,
+          "uplift_pp": 10.650000000000004,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.245125,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 2.375,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.673875,
+          "bandit_recovery": 0.6875,
+          "uplift_pp": 10.675,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.245625,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 4.25,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.66225,
+          "bandit_recovery": 0.687125,
+          "uplift_pp": 10.6375,
+          "baseline_attempts": 1.631625,
+          "bandit_attempts": 1.252,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 6.125,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.652375,
+          "bandit_recovery": 0.687375,
+          "uplift_pp": 10.662499999999998,
+          "baseline_attempts": 1.632625,
+          "bandit_attempts": 1.262,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 8.0,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.642875,
+          "bandit_recovery": 0.687,
+          "uplift_pp": 10.625000000000007,
+          "baseline_attempts": 1.636625,
+          "bandit_attempts": 1.27575,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        }
+      ]
+    },
+    {
+      "parameter": "shortfall_high",
+      "note": "How far a failed charge overshot the available balance. THE FITTED PARAMETER: its default was chosen so the published Recurly baseline reproduces at 58%. Because a headline number rests on it, it is swept the widest, and the calibration is re-checked at every point in the range.",
+      "low": 1.2,
+      "high": 3.0,
+      "default": 1.5,
+      "points": [
+        {
+          "value": 1.2,
+          "baseline_recovery": 0.5885,
+          "taxonomy_recovery": 0.681125,
+          "bandit_recovery": 0.69575,
+          "uplift_pp": 10.724999999999996,
+          "baseline_attempts": 1.5935,
+          "bandit_attempts": 1.23775,
+          "calibration_delta": 0.008500000000000063,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.65,
+          "baseline_recovery": 0.575625,
+          "taxonomy_recovery": 0.667625,
+          "bandit_recovery": 0.6825,
+          "uplift_pp": 10.687499999999995,
+          "baseline_attempts": 1.64875,
+          "bandit_attempts": 1.218625,
+          "calibration_delta": -0.004374999999999907,
+          "calibration_ok": true
+        },
+        {
+          "value": 2.1,
+          "baseline_recovery": 0.559125,
+          "taxonomy_recovery": 0.6525,
+          "bandit_recovery": 0.674125,
+          "uplift_pp": 11.5,
+          "baseline_attempts": 1.697375,
+          "bandit_attempts": 1.285375,
+          "calibration_delta": -0.020874999999999977,
+          "calibration_ok": true
+        },
+        {
+          "value": 2.55,
+          "baseline_recovery": 0.54425,
+          "taxonomy_recovery": 0.63925,
+          "bandit_recovery": 0.659875,
+          "uplift_pp": 11.562499999999998,
+          "baseline_attempts": 1.7395,
+          "bandit_attempts": 1.33275,
+          "calibration_delta": -0.03574999999999995,
+          "calibration_ok": false
+        },
+        {
+          "value": 3.0,
+          "baseline_recovery": 0.53275,
+          "taxonomy_recovery": 0.627375,
+          "bandit_recovery": 0.633375,
+          "uplift_pp": 10.062500000000007,
+          "baseline_attempts": 1.77425,
+          "bandit_attempts": 1.397,
+          "calibration_delta": -0.047250000000000014,
+          "calibration_ok": false
+        }
+      ]
+    },
+    {
+      "parameter": "shortfall_low",
+      "note": "Lower bound of the same overshoot. Near-misses are common but unmeasured.",
+      "low": 1.001,
+      "high": 1.1,
+      "default": 1.01,
+      "points": [
+        {
+          "value": 1.001,
+          "baseline_recovery": 0.581125,
+          "taxonomy_recovery": 0.673375,
+          "bandit_recovery": 0.686125,
+          "uplift_pp": 10.499999999999998,
+          "baseline_attempts": 1.629,
+          "bandit_attempts": 1.252,
+          "calibration_delta": 0.0011250000000000426,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.02575,
+          "baseline_recovery": 0.579875,
+          "taxonomy_recovery": 0.672,
+          "bandit_recovery": 0.686125,
+          "uplift_pp": 10.624999999999996,
+          "baseline_attempts": 1.632875,
+          "bandit_attempts": 1.251,
+          "calibration_delta": -0.00012499999999993072,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.0505,
+          "baseline_recovery": 0.579,
+          "taxonomy_recovery": 0.671125,
+          "bandit_recovery": 0.68475,
+          "uplift_pp": 10.575000000000001,
+          "baseline_attempts": 1.636875,
+          "bandit_attempts": 1.253125,
+          "calibration_delta": -0.0010000000000000009,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.07525,
+          "baseline_recovery": 0.57825,
+          "taxonomy_recovery": 0.67025,
+          "bandit_recovery": 0.685125,
+          "uplift_pp": 10.687499999999995,
+          "baseline_attempts": 1.639875,
+          "bandit_attempts": 1.258,
+          "calibration_delta": -0.0017499999999999183,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.1,
+          "baseline_recovery": 0.5775,
+          "taxonomy_recovery": 0.669375,
+          "bandit_recovery": 0.686,
+          "uplift_pp": 10.850000000000005,
+          "baseline_attempts": 1.643375,
+          "bandit_attempts": 1.254375,
+          "calibration_delta": -0.0024999999999999467,
+          "calibration_ok": true
+        }
+      ]
+    },
+    {
+      "parameter": "amount_log_sigma",
+      "note": "Spread of payment amounts. NPCI publishes the mean ticket but not the shape, and the spread decides how much of the population sits near its balance limit.",
+      "low": 0.8,
+      "high": 1.5,
+      "default": 1.1,
+      "points": [
+        {
+          "value": 0.8,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.672875,
+          "bandit_recovery": 0.6855,
+          "uplift_pp": 10.475000000000001,
+          "baseline_attempts": 1.6305,
+          "bandit_attempts": 1.2585,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.9750000000000001,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.672875,
+          "bandit_recovery": 0.685375,
+          "uplift_pp": 10.462499999999997,
+          "baseline_attempts": 1.630625,
+          "bandit_attempts": 1.24775,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.15,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.672875,
+          "bandit_recovery": 0.68625,
+          "uplift_pp": 10.550000000000004,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.248625,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.325,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.672875,
+          "bandit_recovery": 0.687625,
+          "uplift_pp": 10.687500000000005,
+          "baseline_attempts": 1.6315,
+          "bandit_attempts": 1.247875,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.5,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.672875,
+          "bandit_recovery": 0.682125,
+          "uplift_pp": 10.1375,
+          "baseline_attempts": 1.632375,
+          "bandit_attempts": 1.2595,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        }
+      ]
+    },
+    {
+      "parameter": "balance_floor_fraction",
+      "note": "Residual balance at the worst point of the salary cycle. Sets the floor on how badly a late-cycle retry can do.",
+      "low": 0.01,
+      "high": 0.15,
+      "default": 0.05,
+      "points": [
+        {
+          "value": 0.01,
+          "baseline_recovery": 0.576,
+          "taxonomy_recovery": 0.668875,
+          "bandit_recovery": 0.68625,
+          "uplift_pp": 11.025000000000007,
+          "baseline_attempts": 1.63925,
+          "bandit_attempts": 1.229875,
+          "calibration_delta": -0.0040000000000000036,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.045,
+          "baseline_recovery": 0.579875,
+          "taxonomy_recovery": 0.671875,
+          "bandit_recovery": 0.684625,
+          "uplift_pp": 10.475000000000001,
+          "baseline_attempts": 1.632,
+          "bandit_attempts": 1.24675,
+          "calibration_delta": -0.00012499999999993072,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.07999999999999999,
+          "baseline_recovery": 0.5825,
+          "taxonomy_recovery": 0.675125,
+          "bandit_recovery": 0.68525,
+          "uplift_pp": 10.275,
+          "baseline_attempts": 1.626875,
+          "bandit_attempts": 1.231875,
+          "calibration_delta": 0.0025000000000000577,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.11499999999999998,
+          "baseline_recovery": 0.584875,
+          "taxonomy_recovery": 0.677,
+          "bandit_recovery": 0.69125,
+          "uplift_pp": 10.6375,
+          "baseline_attempts": 1.623,
+          "bandit_attempts": 1.201375,
+          "calibration_delta": 0.004875000000000074,
+          "calibration_ok": true
+        },
+        {
+          "value": 0.15,
+          "baseline_recovery": 0.58675,
+          "taxonomy_recovery": 0.67825,
+          "bandit_recovery": 0.691625,
+          "uplift_pp": 10.487500000000004,
+          "baseline_attempts": 1.61975,
+          "bandit_attempts": 1.2025,
+          "calibration_delta": 0.006750000000000034,
+          "calibration_ok": true
+        }
+      ]
+    },
+    {
+      "parameter": "salary_day_jitter",
+      "note": "Dispersion of salary credit dates across the population. At zero every customer is paid on the same day, which would make the cycle far easier to exploit than it is in reality.",
+      "low": 0.0,
+      "high": 7.0,
+      "default": 3.0,
+      "points": [
+        {
+          "value": 0.0,
+          "baseline_recovery": 0.5775,
+          "taxonomy_recovery": 0.669,
+          "bandit_recovery": 0.69325,
+          "uplift_pp": 11.575000000000003,
+          "baseline_attempts": 1.633375,
+          "bandit_attempts": 1.22725,
+          "calibration_delta": -0.0024999999999999467,
+          "calibration_ok": true
+        },
+        {
+          "value": 1.75,
+          "baseline_recovery": 0.581375,
+          "taxonomy_recovery": 0.673625,
+          "bandit_recovery": 0.687625,
+          "uplift_pp": 10.625000000000007,
+          "baseline_attempts": 1.62825,
+          "bandit_attempts": 1.24775,
+          "calibration_delta": 0.001375000000000015,
+          "calibration_ok": true
+        },
+        {
+          "value": 3.5,
+          "baseline_recovery": 0.58075,
+          "taxonomy_recovery": 0.672875,
+          "bandit_recovery": 0.6875,
+          "uplift_pp": 10.675,
+          "baseline_attempts": 1.631,
+          "bandit_attempts": 1.24575,
+          "calibration_delta": 0.0007500000000000284,
+          "calibration_ok": true
+        },
+        {
+          "value": 5.25,
+          "baseline_recovery": 0.581375,
+          "taxonomy_recovery": 0.67275,
+          "bandit_recovery": 0.69,
+          "uplift_pp": 10.862499999999997,
+          "baseline_attempts": 1.62725,
+          "bandit_attempts": 1.233625,
+          "calibration_delta": 0.001375000000000015,
+          "calibration_ok": true
+        },
+        {
+          "value": 7.0,
+          "baseline_recovery": 0.580875,
+          "taxonomy_recovery": 0.670875,
+          "bandit_recovery": 0.67325,
+          "uplift_pp": 9.237499999999999,
+          "baseline_attempts": 1.630625,
+          "bandit_attempts": 1.1805,
+          "calibration_delta": 0.0008750000000000702,
+          "calibration_ok": true
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "n_configurations": 45,
+    "uplift_min_pp": 6.187500000000002,
+    "uplift_max_pp": 15.175000000000004,
+    "worst_parameter": "outreach_response_rate",
+    "worst_value": 0.15,
+    "best_parameter": "outreach_response_rate",
+    "uncalibrated_points": [
+      {
+        "parameter": "shortfall_high",
+        "value": 2.55,
+        "baseline_recovery": 0.54425
+      },
+      {
+        "parameter": "shortfall_high",
+        "value": 3.0,
+        "baseline_recovery": 0.53275
+      }
+    ]
+  }
+}
