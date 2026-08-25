@@ -25,3 +25,5 @@ dist/
 htmlcov/
 results.json
 Screenshot*.png
+data/results/eval_quick.json
+data/results/sweep_smoke.json

@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 import time
 from datetime import UTC, datetime
@@ -29,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from recoup.eval.harness import EvalResult, build_world, evaluate
+from recoup.eval.provenance import git_commit, git_dirty
 from recoup.eval.report import (
     RECURLY_PUBLISHED_RECOVERY,
     format_calibration_check,
@@ -58,38 +58,6 @@ OUTPUT = Path("data/results/eval.json")
 
 BASELINE = "fixed_1_3_5_7"
 """The policy every uplift is quoted against. Recurly's published schedule."""
-
-
-def _git(*args: str) -> str | None:
-    """Run a git command, or return None if this is not a usable checkout."""
-    try:
-        out = subprocess.run(
-            ["git", *args],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return out.stdout.strip() if out.returncode == 0 else None
-
-
-def git_commit() -> str | None:
-    """The commit these numbers were produced under, if this is a checkout."""
-    return _git("rev-parse", "HEAD") or None
-
-
-def git_dirty() -> bool | None:
-    """Whether uncommitted changes were present when these numbers were produced.
-
-    Without this the recorded commit promises more than it can keep. ADR-010 offers "here
-    is the commit, run it yourself", and from a dirty tree that is not something a reader
-    can actually do. A results file produced with local edits is still useful; one that
-    does not admit to them is not.
-    """
-    status = _git("status", "--porcelain")
-    return None if status is None else bool(status)
 
 
 def as_dict(result: EvalResult) -> dict[str, Any]:
@@ -197,6 +165,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--out", type=Path, default=OUTPUT)
     args = parser.parse_args(argv)
+
+    # A smoke run must not be able to overwrite the published results. It did once: a
+    # --quick run replaced a 40,000-customer file with a 4,000-customer one, and nothing
+    # about the file said so except a parameter block nobody re-reads.
+    if args.quick and args.out == OUTPUT:
+        args.out = OUTPUT.with_name("eval_quick.json")
+        print(f"--quick: writing to {args.out} so {OUTPUT} is left alone")
 
     customers = args.customers or (QUICK_CUSTOMERS if args.quick else DEFAULT_CUSTOMERS)
     document = run(customers, args.seed, args.epochs)

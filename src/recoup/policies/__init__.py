@@ -1,5 +1,6 @@
 """Recovery policies: the baselines Recoup must beat, and Recoup's own."""
 
+from recoup.policies.ablations import RailBlind, RemedyRouted, SessionBlind
 from recoup.policies.bandit import OUTREACH_ARMS, RETRY_DELAYS_HOURS, BanditPolicy, LinUCB
 from recoup.policies.baselines import (
     RECURLY_SCHEDULE_DAYS,
@@ -19,6 +20,9 @@ __all__ = [
     "FixedSchedule",
     "NoRetry",
     "OutreachOnly",
+    "RailBlind",
+    "RemedyRouted",
+    "SessionBlind",
     "TaxonomyAware",
     "BanditPolicy",
     "LinUCB",
