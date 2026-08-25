@@ -47,3 +47,8 @@ jobs:
       # times without the system changing.
       - name: Results document is current
         run: python scripts/render_results.py --check
+
+      # The benchmark page is hand-designed so it cannot be regenerated, but it quotes the
+      # same figures. This reads them back out and compares them to data/results/.
+      - name: Benchmark page agrees with the results
+        run: python scripts/check_benchmark.py

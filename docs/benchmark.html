@@ -568,13 +568,13 @@ footer {
   <p class="thesis">
     The industry-standard retry schedule applies one remedy to five different problems.
     Four of them cannot be solved by retrying at all. Routing each decline to the remedy
-    that can actually work recovers <strong>9.8 points more payments on fewer attempts</strong>.
+    that can actually work recovers <strong>10.7 points more payments on fewer attempts</strong>.
   </p>
   <div class="meta">
     <span><b>20,000</b> held-out episodes</span>
     <span><b>NPCI</b> Sep 2025 – Jul 2026</span>
     <span><b>300</b> real bank incidents</span>
-    <span>day 5 of 11</span>
+    <span>day 10 of 11</span>
   </div>
 </header>
 
@@ -582,23 +582,23 @@ footer {
   <div class="stats">
     <div class="stat">
       <div class="label">Payments recovered</div>
-      <div class="value">68.0%</div>
-      <div class="delta"><b class="up">+9.8 pts</b> vs baseline 58.2%</div>
+      <div class="value">69.1%</div>
+      <div class="delta"><b class="up">+10.7 pts</b> vs baseline 58.4%</div>
     </div>
     <div class="stat">
       <div class="label">Revenue recovered</div>
-      <div class="value">86.7%</div>
-      <div class="delta"><b class="up">+5.0 pts</b> vs baseline 81.7%</div>
+      <div class="value">85.6%</div>
+      <div class="delta"><b class="up">+3.4 pts</b> vs baseline 82.2%</div>
     </div>
     <div class="stat">
       <div class="label">Attempts per payment</div>
-      <div class="value">1.27</div>
-      <div class="delta"><b class="up">&minus;0.37</b> vs baseline 1.64</div>
+      <div class="value">1.26</div>
+      <div class="delta"><b class="up">&minus;0.37</b> vs baseline 1.63</div>
     </div>
     <div class="stat">
       <div class="label">Wasted attempts</div>
-      <div class="value">46.3%</div>
-      <div class="delta"><b class="up">&minus;18.2 pts</b> vs baseline 64.5%</div>
+      <div class="value">45.2%</div>
+      <div class="delta"><b class="up">&minus;19.0 pts</b> vs baseline 64.2%</div>
     </div>
   </div>
 </section>
@@ -657,27 +657,27 @@ footer {
         <tr class="baseline">
           <td class="name">Fixed day 1/3/5/7 <span class="tag base">baseline</span>
             <small>The industry default. Recurly's published schedule.</small></td>
-          <td>58.2%</td><td>81.7%</td><td>1.64</td><td>64.5%</td><td>0.00</td><td>0.0%</td>
+          <td>58.4%</td><td>82.2%</td><td>1.63</td><td>64.2%</td><td>0.00</td><td>0.0%</td>
         </tr>
         <tr>
           <td class="name">Outreach only
             <small>Dunning emails, never a silent retry.</small></td>
-          <td>35.7%</td><td>27.0%</td><td>0.60</td><td>39.9%</td><td>2.52</td><td>6.1%</td>
+          <td>36.9%</td><td>28.3%</td><td>0.60</td><td>38.5%</td><td>2.50</td><td>6.1%</td>
         </tr>
         <tr>
           <td class="name">Aggressive retry
             <small>Retry as fast and often as permitted.</small></td>
-          <td>59.3%</td><td>87.0%</td><td>1.65</td><td>64.0%</td><td>0.00</td><td>0.0%</td>
+          <td>59.7%</td><td>87.6%</td><td>1.65</td><td>63.8%</td><td>0.00</td><td>0.0%</td>
         </tr>
         <tr>
           <td class="name">Taxonomy routing
             <small>Rules only. No model, no learning.</small></td>
-          <td>66.4%</td><td>81.1%</td><td>1.36</td><td>51.3%</td><td>0.51</td><td>1.3%</td>
+          <td>67.1%</td><td>81.9%</td><td>1.36</td><td>50.7%</td><td>0.50</td><td>1.2%</td>
         </tr>
         <tr class="ours">
           <td class="name">Routing + bandit <span class="tag ours">ours</span>
             <small>Taxonomy for structure, LinUCB for timing and channel.</small></td>
-          <td>68.0%</td><td>86.7%</td><td>1.27</td><td>46.3%</td><td>0.51</td><td>1.3%</td>
+          <td>69.1%</td><td>85.6%</td><td>1.26</td><td>45.2%</td><td>0.50</td><td>1.3%</td>
         </tr>
       </tbody>
     </table>
@@ -686,12 +686,137 @@ footer {
   <div class="note">
     <span class="eyebrow">Read the third row first</span>
     <p>
-      Aggressive retry recovers <strong>87.0% of revenue</strong> &mdash; nominally the best
-      number on the board. It does it by spending 1.65 attempts on every payment, including
-      the ones that can never succeed. Our policy matches it to within 0.3 points while
-      spending <strong>0.38 fewer attempts</strong>. Attempts are not free: they consume
-      issuer goodwill, rail capacity and customer patience, none of which appear in a
-      recovery-rate column.
+      Aggressive retry recovers <strong>87.6% of revenue</strong> &mdash; nominally the best
+      number on the board, and 2.0 points above ours. It gets there by recovering
+      <strong>9.4 points fewer payments</strong>: 59.7% against our 69.1%. The gap is the
+      heavy tail in payment amounts, where a handful of large recoveries move the
+      revenue column more than many small ones. It also spends 1.65 attempts on every
+      payment, including the ones that can never succeed, against our 1.26. Attempts are
+      not free: they consume issuer goodwill, rail capacity and customer patience, none of
+      which appear in a recovery-rate column.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Ablations</span>
+    <h2>Which branch earns the uplift</h2>
+    <p>
+      A single number says the system works. It does not say which part of it works. Each
+      variant below differs from the routing policy by <strong>exactly one branch</strong>,
+      so the gap between them belongs to that branch and nothing else.
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Policy</th>
+          <th>Recovered</th>
+          <th>Attempts</th>
+          <th>vs baseline</th>
+          <th>Branch is worth</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="baseline">
+          <td class="name">Fixed day 1/3/5/7 <span class="tag base">baseline</span>
+            <small>The industry default.</small></td>
+          <td>58.1%</td><td>1.63</td><td>&mdash;</td><td>&mdash;</td>
+        </tr>
+        <tr>
+          <td class="name">Session-blind
+            <small>Treats a decline needing a live customer session as a timing problem.</small></td>
+          <td>57.8%</td><td>1.71</td><td>&minus;0.25 pts</td><td><b class="up">+9.46 pts</b></td>
+        </tr>
+        <tr>
+          <td class="name">Rail-blind
+            <small>Never asks whether the customer's bank is currently down.</small></td>
+          <td>63.4%</td><td>1.49</td><td>+5.34 pts</td><td><b class="up">+3.87 pts</b></td>
+        </tr>
+        <tr>
+          <td class="name">Remedy-routed
+            <small>Follows Razorpay's guidance: asks the customer instead of retrying a declined card.</small></td>
+          <td>67.1%</td><td>1.32</td><td>+8.99 pts</td><td>+0.22 pts</td>
+        </tr>
+        <tr>
+          <td class="name">Taxonomy routing
+            <small>All branches present. Rules only, no learning.</small></td>
+          <td>67.3%</td><td>1.35</td><td>+9.21 pts</td><td>&mdash;</td>
+        </tr>
+        <tr class="ours">
+          <td class="name">Routing + bandit <span class="tag ours">ours</span>
+            <small>Taxonomy for structure, LinUCB for timing and channel.</small></td>
+          <td>68.8%</td><td>1.25</td><td>+10.68 pts</td><td>&mdash;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="eyebrow">The first row of the table is the thesis</span>
+    <p>
+      Remove session-awareness and the policy scores <strong>57.8%</strong> &mdash; below the
+      58.1% baseline it exists to beat. Nearly the entire advantage comes from one idea:
+      some declines need the customer back, and no retry schedule can substitute for that.
+      Not from clever timing, and not from the model.
+    </p>
+    <p style="margin-top:12px">
+      The third row is the one worth defending out loud. Razorpay's published resolution for
+      <code>card_declined</code> is to advise the customer to try another card, not to
+      silently retry the one that failed. Following that costs <strong>0.22 points</strong>.
+      Correctness here is close to free, which is what makes it a decision rather than a
+      trade-off.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <span class="eyebrow">Sensitivity</span>
+    <h2>The result survives the parameters nobody publishes</h2>
+    <p>
+      Nine parameters have no trustworthy published value. Each was walked across its full
+      plausible range with the others held at default, and the bandit retrained at every
+      point &mdash; a policy tuned under one set of dynamics is not evidence about another.
+    </p>
+  </div>
+
+  <div class="gate">
+    <div class="g">
+      <div class="glabel">Configurations</div>
+      <div class="gval">45</div>
+      <div class="gsub">9 parameters &times; 5 points</div>
+    </div>
+    <div class="g">
+      <div class="glabel">Worst uplift</div>
+      <div class="gval" style="color:var(--accent)">+6.2</div>
+      <div class="gsub">outreach response rate at 0.15</div>
+    </div>
+    <div class="g">
+      <div class="glabel">Best uplift</div>
+      <div class="gval">+15.2</div>
+      <div class="gsub">the same parameter at 0.45</div>
+    </div>
+    <div class="g">
+      <div class="glabel">Ever negative</div>
+      <div style="margin-top:6px"><span class="pass">NEVER</span></div>
+    </div>
+  </div>
+
+  <div class="prose" style="margin-top:24px">
+    <p>
+      The worst case sits at the pessimistic end of the parameter that most directly drives
+      the mechanism, and it still returns <strong>+6.2 points</strong>. That is the claim
+      worth making: not &ldquo;+10.7 under our assumptions&rdquo; but <em>at least +6.2 under
+      any plausible one</em>.
+    </p>
+    <p>
+      Two of the 45 configurations fall outside the calibration gate, both at the widest
+      settings of the one parameter that was fitted rather than sourced. They are reported
+      rather than dropped, and nothing here rests on them.
     </p>
   </div>
 </section>
@@ -764,12 +889,12 @@ footer {
     </div>
     <div class="g">
       <div class="glabel">Reproduced</div>
-      <div class="gval" style="color:var(--accent)">58.2%</div>
+      <div class="gval" style="color:var(--accent)">58.4%</div>
       <div class="gsub">Our simulator, same schedule</div>
     </div>
     <div class="g">
       <div class="glabel">Difference</div>
-      <div class="gval">+0.2</div>
+      <div class="gval">+0.4</div>
       <div class="gsub">tolerance &plusmn;3.0 points</div>
     </div>
     <div class="g">
@@ -796,7 +921,8 @@ footer {
     <p>
       The balance mechanism assumes Indian consumers have more capacity just after a
       month-start credit. That was an assumption until NPCI's daily statistics were checked
-      against it.
+      against it. It validates a simulator mechanism &mdash; it is <em>not</em> where the
+      recovery comes from, and the ablations above say so plainly.
     </p>
   </div>
 
@@ -854,7 +980,10 @@ footer {
     <p>
       A simulated result is worth exactly as much as its willingness to say where its inputs
       came from. <code>scripts/audit_parameters.py</code> prints this ledger and exits non-zero
-      if any invented parameter escapes the sensitivity sweep.
+      if any invented parameter escapes the sensitivity sweep. A second check runs beside it:
+      every swept parameter must measurably move the outcome. Two did not &mdash; one was read
+      by no code at all &mdash; and sweeping them had been proving nothing while the audit
+      reported everything accounted for.
     </p>
   </div>
 
@@ -900,11 +1029,12 @@ footer {
 
   <div class="limits">
     <div class="limit">
-      <h3>The magnitude is not yet trustworthy</h3>
+      <h3>The magnitude depends on parameters nobody publishes</h3>
       <p>
-        The +9.8 point figure depends on three invented parameters: the session-conditional
-        share of the decline mix, the outreach response rate, and the session completion rate.
-        The full sensitivity sweep has not run yet. Treat the size as provisional.
+        The +10.7 point figure rests on parameters with no public source, chiefly the outreach
+        response rate. The sweep bounds that: across 45 configurations the uplift ranges from
+        +6.2 to +15.2 points. Read <strong>+6.2</strong> as the defensible floor and +10.7 as
+        the central estimate, not as a precise quantity.
       </p>
     </div>
     <div class="limit">
