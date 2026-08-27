@@ -8,6 +8,8 @@ screen says one thing and the code says another.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from recoup.gateway.webhooks import FailedPaymentEvent
@@ -243,3 +245,71 @@ class TestSerialisation:
         assert payload["outcome"] in {"allowed", "deferred", "refused", "none"}
         assert len(payload["steps"]) == len(trace.steps)
         assert all(isinstance(field, list) for step in payload["steps"] for field in step["fields"])
+
+
+class TestTheTraceCarriesTheModelsWork:
+    """The engine's intelligence has to reach the screen, or the demo shows only the
+    deterministic half and a reader concludes the system is a decision table."""
+
+    def test_a_deterministic_classification_says_no_model_was_needed(self) -> None:
+        """The architecture's claim is that most traffic never reaches a model. A trace
+        that cannot show *that* cannot evidence the claim."""
+        from recoup.agent import DeclineNormalizer
+
+        result = DeclineNormalizer().classify(error_reason="insufficient_funds")
+        trace = explain(event("insufficient_funds"), classification=result)
+
+        assert trace.classification is not None
+        assert trace.classification["source"] == "exact"
+        assert trace.classification["used_model"] is False
+        assert "normalised" in [step.stage for step in trace.steps]
+
+    def test_the_learned_policy_exposes_every_arm_it_scored(self) -> None:
+        from recoup.policies import BanditPolicy
+
+        trace = explain(event("insufficient_funds"), policy=BanditPolicy(explore=False))
+
+        assert trace.bandit is not None
+        assert len(trace.bandit["arms"]) > 1
+        assert sum(1 for arm in trace.bandit["arms"] if arm["chosen"]) == 1
+
+    def test_the_rule_based_policy_reports_no_bandit(self) -> None:
+        """Absent, not faked. A bandit panel on a policy that has no bandit would be a
+        screen inventing a model that did not run."""
+        assert explain(event("insufficient_funds")).bandit is None
+
+    def test_an_outreach_decision_carries_the_message(self) -> None:
+        from recoup.agent import OutreachWriter
+
+        trace = explain(event("payment_cancelled"), writer=OutreachWriter())
+
+        assert trace.action == "outreach"
+        assert trace.message is not None
+        assert trace.message["body"]
+        assert trace.message["generated"] is False, "no provider configured, so a template"
+        assert trace.message["length"] <= trace.message["limit"]
+        assert "composed" in [step.stage for step in trace.steps]
+
+    def test_a_retry_decision_carries_no_message(self) -> None:
+        from recoup.agent import OutreachWriter
+
+        trace = explain(event("insufficient_funds"), writer=OutreachWriter())
+
+        assert trace.action == "retry"
+        assert trace.message is None, "nobody is contacted, so there is nothing to compose"
+
+    def test_all_of_it_survives_the_json_boundary(self) -> None:
+        from recoup.agent import DeclineNormalizer, OutreachWriter
+        from recoup.policies import BanditPolicy
+
+        trace = explain(
+            event("payment_cancelled"),
+            policy=BanditPolicy(explore=False),
+            classification=DeclineNormalizer().classify(error_reason="payment_cancelled"),
+            writer=OutreachWriter(),
+        )
+        payload = json.loads(json.dumps(trace.to_dict()))
+
+        assert payload["classification"]["source"] == "exact"
+        assert payload["bandit"]["arms"]
+        assert payload["message"]["body"]

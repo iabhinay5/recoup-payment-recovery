@@ -21,10 +21,11 @@ customer something.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 
-from recoup.policies.features import N_FEATURES, extract_features
+from recoup.policies.features import FEATURE_NAMES, N_FEATURES, extract_features
 from recoup.sim.entities import ContactChannel
 from recoup.sim.episode import Action, EpisodeState
 from recoup.taxonomy import DeclineClass, lookup
@@ -145,6 +146,40 @@ class LinUCB:
         """Predictive standard deviation for one arm. Used for explanation, not selection."""
         variance = float(context @ np.linalg.solve(self._A[arm], context))
         return float(np.sqrt(max(variance, 0.0)))
+
+    def contributions(self, context: np.ndarray, arm: int) -> np.ndarray:
+        """Each feature's share of this arm's predicted reward.
+
+        The score is a dot product, so a feature's contribution is exactly
+        ``theta[i] * x[i]``. Nothing is being approximated: this is the arithmetic the
+        model performed. It is the reason a linear policy was chosen over something that
+        would need its reasoning reconstructed afterwards.
+        """
+        contributions: np.ndarray = self._theta(arm) * context
+        return contributions
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialise the learned statistics, so a trained policy can be reloaded.
+
+        Without this, anything that wanted to *show* the policy would have to retrain it,
+        and would then be showing a different policy from the one the results describe.
+        """
+        return {
+            "n_arms": self.n_arms,
+            "n_features": self.n_features,
+            "alpha": self.alpha,
+            "A": self._A.tolist(),
+            "b": self._b.tolist(),
+            "pulls": self.pulls.tolist(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> LinUCB:
+        bandit = cls(int(data["n_arms"]), int(data["n_features"]), float(data["alpha"]))
+        bandit._A = np.array(data["A"], dtype=float)
+        bandit._b = np.array(data["b"], dtype=float)
+        bandit.pulls = np.array(data["pulls"], dtype=int)
+        return bandit
 
 
 @dataclass
@@ -273,3 +308,89 @@ class BanditPolicy:
             f"chose {arms[best]} (expected {scores[best]:.3f}, "
             f"+/- {bandit.confidence(context, best):.3f}, {bandit.pulls[best]} pulls)"
         )
+
+    def explain_dict(self, state: EpisodeState) -> dict[str, Any]:
+        """The same explanation as ``explain``, structured for a screen.
+
+        Returns every arm with its predicted reward, not only the winner. Seeing the
+        alternatives is what distinguishes a decision from an assertion: the policy is
+        choosing between eight options with known scores, and a reader can check that the
+        chosen one really is the argmax.
+        """
+        reason = lookup(state.current_decline_code)
+        context = extract_features(state)
+
+        if reason.decline_class is DeclineClass.SESSION_CONDITIONAL and not state.in_session:
+            bandit = self.outreach_bandit
+            labels = [f"{d:g}h {c.value}" for d, c in OUTREACH_ARMS]
+            kind = "outreach"
+        else:
+            bandit = self.retry_bandit
+            labels = [f"+{d:g}h" for d in RETRY_DELAYS_HOURS]
+            kind = "retry"
+
+        scores = bandit.scores(context, explore=False)
+        best = int(np.argmax(scores))
+        contributions = bandit.contributions(context, best)
+        ranked = np.argsort(-np.abs(contributions))
+
+        return {
+            "kind": kind,
+            "trained": int(bandit.pulls.sum()),
+            "arms": [
+                {
+                    "label": labels[arm],
+                    "score": float(scores[arm]),
+                    "pulls": int(bandit.pulls[arm]),
+                    "chosen": arm == best,
+                }
+                for arm in range(bandit.n_arms)
+            ],
+            "chosen": {
+                "label": labels[best],
+                "score": float(scores[best]),
+                "confidence": float(bandit.confidence(context, best)),
+                "pulls": int(bandit.pulls[best]),
+            },
+            "features": [
+                {
+                    "name": FEATURE_NAMES[i],
+                    "value": float(context[i]),
+                    "contribution": float(contributions[i]),
+                }
+                for i in ranked
+                if context[i] != 0.0
+            ][:6],
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialise a trained policy, arms and feature names included.
+
+        The names are stored so a reload can refuse a stale file rather than quietly
+        scoring the wrong columns: the weights are meaningless if the feature vector has
+        changed shape or order underneath them.
+        """
+        return {
+            "retry": self.retry_bandit.to_dict(),
+            "outreach": self.outreach_bandit.to_dict(),
+            "max_contacts": self.max_contacts,
+            "retry_delays_hours": list(RETRY_DELAYS_HOURS),
+            "outreach_arms": [[delay, channel.value] for delay, channel in OUTREACH_ARMS],
+            "feature_names": list(FEATURE_NAMES),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BanditPolicy:
+        """Reload a trained policy. Exploration is off: this is for serving, not learning."""
+        saved = list(data.get("feature_names", ()))
+        if saved != list(FEATURE_NAMES):
+            raise ValueError(
+                "the saved bandit was trained on a different feature vector "
+                f"({len(saved)} features) than this build expects ({N_FEATURES}). "
+                "Retrain with scripts/run_eval.py rather than scoring on stale weights."
+            )
+        policy = cls(explore=False)
+        policy.retry_bandit = LinUCB.from_dict(data["retry"])
+        policy.outreach_bandit = LinUCB.from_dict(data["outreach"])
+        policy.max_contacts = int(data.get("max_contacts", policy.max_contacts))
+        return policy

@@ -36,10 +36,14 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
+from recoup.agent.normalizer import DeclineNormalizer
+from recoup.agent.outreach import Language, OutreachWriter
 from recoup.config import Settings
 from recoup.gateway.server import EventLog, create_app
 from recoup.gateway.webhooks import FailedPaymentEvent
 from recoup.guardrails import Guardrails, idempotency_key
+from recoup.llm.base import LLMProvider
+from recoup.policies.bandit import BanditPolicy
 from recoup.policies.taxonomy_aware import TaxonomyAware
 from recoup.sim.episode import Policy
 from recoup.taxonomy import all_reasons, lookup
@@ -49,8 +53,40 @@ __all__ = ["DashboardState", "FeedEntry", "create_dashboard"]
 
 STATIC = Path(__file__).parent / "static"
 RESULTS_PATH = Path("data/results/eval.json")
+BANDIT_PATH = Path("data/results/bandit.json")
 FEED_LIMIT = 50
 """How many traces the feed keeps. A demo, not a datastore — see ``EventLog``."""
+
+
+def build_provider() -> LLMProvider | None:
+    """The language model, if one is configured. ``None`` is a supported state.
+
+    A demo that cannot run without an API key is a demo that fails on the day the key
+    expires. Every component that takes a provider degrades to a deterministic path
+    without one, and the screen says which it used rather than hiding the difference.
+    """
+    try:
+        from recoup.llm.providers import GroqProvider
+
+        return GroqProvider()
+    except Exception:  # noqa: BLE001 — no key, no package, no network: all the same here
+        return None
+
+
+def load_policy() -> tuple[Policy, str]:
+    """The trained bandit if it has been saved, otherwise the rule-based policy.
+
+    Loading rather than retraining matters: the policy on the screen is then literally the
+    one ``data/results/eval.json`` reports on. A dashboard that trained its own bandit at
+    startup would be demonstrating a different system from the one the numbers describe.
+    """
+    if not BANDIT_PATH.exists():
+        return TaxonomyAware(), f"{BANDIT_PATH} not found — run scripts/run_eval.py"
+    try:
+        saved = json.loads(BANDIT_PATH.read_text(encoding="utf-8"))
+        return BanditPolicy.from_dict(saved), f"trained policy loaded from {BANDIT_PATH}"
+    except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
+        return TaxonomyAware(), f"could not load {BANDIT_PATH}: {exc}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,16 +105,40 @@ class DashboardState:
     """Everything the screen shows. In memory, for the life of the process."""
 
     policy: Policy = field(default_factory=TaxonomyAware)
+    policy_note: str = ""
     guardrails: Guardrails = field(default_factory=Guardrails)
     events: EventLog = field(default_factory=EventLog)
     entries: list[FeedEntry] = field(default_factory=list)
     seen_payment_ids: set[str] = field(default_factory=set)
     results_path: Path = RESULTS_PATH
+    provider: LLMProvider | None = None
+    normalizer: DeclineNormalizer = field(default_factory=DeclineNormalizer)
+    writer: OutreachWriter = field(default_factory=OutreachWriter)
+    language: Language = Language.ENGLISH
 
-    def record(self, event: FailedPaymentEvent, source: str) -> FeedEntry:
-        """Run one event through the engine and keep the trace."""
+    def record(
+        self, event: FailedPaymentEvent, source: str, language: Language | None = None
+    ) -> FeedEntry:
+        """Run one event through the engine and keep the trace.
+
+        The normaliser runs on every event, and on the common path resolves the code by
+        dictionary lookup without touching the model. The trace records which, because
+        *how often the model is not needed* is the architecture's claim.
+        """
+        classification = self.normalizer.classify(
+            error_reason=event.error_reason or None,
+            error_description=event.error_description or None,
+            error_code=event.error_code or None,
+        )
         entry = FeedEntry(
-            trace=explain(event, policy=self.policy, guardrails=self.guardrails),
+            trace=explain(
+                event,
+                policy=self.policy,
+                guardrails=self.guardrails,
+                classification=classification,
+                writer=self.writer,
+                language=language if language is not None else self.language,
+            ),
             source=source,
         )
         self.entries.append(entry)
@@ -113,6 +173,15 @@ class InjectRequest(BaseModel):
     decline_code: str = Field(default="card_expired")
     amount_paise: int = Field(default=125_000, gt=0)
     method: str = Field(default="card")
+    language: str = Field(default="ENGLISH")
+
+
+class ClassifyRequest(BaseModel):
+    """Raw gateway text, as it would arrive without a usable error code."""
+
+    text: str = Field(default="", max_length=2000)
+    error_reason: str = Field(default="", max_length=200)
+    error_code: str = Field(default="", max_length=200)
 
 
 def _synthetic_event(request: InjectRequest) -> FailedPaymentEvent:
@@ -141,7 +210,18 @@ def create_dashboard(
     The webhook routes come from ``recoup.gateway.server`` unchanged rather than being
     re-declared here, so the endpoint being demonstrated is the endpoint that is tested.
     """
-    dashboard = state if state is not None else DashboardState()
+    if state is not None:
+        dashboard = state
+    else:
+        provider = build_provider()
+        policy, policy_note = load_policy()
+        dashboard = DashboardState(
+            policy=policy,
+            policy_note=policy_note,
+            provider=provider,
+            normalizer=DeclineNormalizer(provider=provider),
+            writer=OutreachWriter(provider=provider, merchant_name="Chai Point"),
+        )
 
     def on_failure(event: FailedPaymentEvent) -> None:
         dashboard.record(event, "webhook")
@@ -159,6 +239,15 @@ def create_dashboard(
         settings = Settings.from_env()
         return {
             "policy": dashboard.policy.name,
+            "policy_note": dashboard.policy_note,
+            "policy_is_learned": isinstance(dashboard.policy, BanditPolicy),
+            "llm_model": dashboard.provider.model if dashboard.provider else None,
+            "llm_calls": dashboard.normalizer.model_calls,
+            "llm_call_rate": dashboard.normalizer.model_call_rate,
+            "llm_classified": dashboard.normalizer.total,
+            "messages_generated": dashboard.writer.generated,
+            "messages_templated": dashboard.writer.templated,
+            "messages_rejected": dashboard.writer.rejected,
             "webhook_events": dashboard.events.count,
             "rejected_signatures": dashboard.events.rejected,
             "ignored_events": dashboard.events.ignored,
@@ -190,7 +279,42 @@ def create_dashboard(
 
     @app.post("/api/inject")
     def api_inject(request: InjectRequest) -> dict[str, Any]:
-        return dashboard.record(_synthetic_event(request), "injected").to_dict()
+        try:
+            language = Language[request.language.upper()]
+        except KeyError:
+            language = Language.ENGLISH
+        return dashboard.record(_synthetic_event(request), "injected", language).to_dict()
+
+    @app.post("/api/classify")
+    def api_classify(request: ClassifyRequest) -> dict[str, Any]:
+        """Classify raw text the way an unrecognised gateway error would arrive.
+
+        This is the one surface where the model is doing the work rather than standing
+        aside: the text carries no Razorpay error code, so no lookup can resolve it. The
+        response reports the source, so a reader can tell a model call from a dictionary
+        hit — including when the deterministic path wins after all.
+        """
+        before = dashboard.normalizer.model_calls
+        result = dashboard.normalizer.classify(
+            error_reason=request.error_reason or None,
+            error_description=request.text or None,
+            error_code=request.error_code or None,
+        )
+        reason = lookup(result.code)
+        return {
+            "code": result.code,
+            "source": result.source.value,
+            "confidence": result.confidence,
+            "rationale": result.rationale,
+            "used_model": result.used_model,
+            "is_confident": result.is_confident,
+            "called_model": dashboard.normalizer.model_calls > before,
+            "decline_class": reason.decline_class.value,
+            "remedy": reason.remedy.value,
+            "max_attempts": reason.max_attempts,
+            "model": dashboard.provider.model if dashboard.provider else None,
+            "summary": dashboard.normalizer.summary(),
+        }
 
     @app.post("/api/double-charge")
     def api_double_charge() -> JSONResponse:

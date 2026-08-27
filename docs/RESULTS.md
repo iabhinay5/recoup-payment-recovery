@@ -125,7 +125,7 @@ python scripts/render_results.py  # this file
 
 | | configuration | provenance |
 |---|---|---|
-| evaluation | 40,000 customers, seed 0, 3 epochs, 20,000 held-out episodes |  generated 2026-08-25T14:58:54+00:00 at commit `ce2e3211` (uncommitted changes present) |
+| evaluation | 40,000 customers, seed 0, 3 epochs, 20,000 held-out episodes |  generated 2026-08-27T18:56:43+00:00 at commit `7d6ef374` (uncommitted changes present) |
 | sweep | 16,000 customers, seed 0, 2 epochs, 5 points per parameter |  generated 2026-08-25T16:11:28+00:00 at commit `33cf6d77` (uncommitted changes present) |
 
 Both runs are deterministic. `tests/test_harness.py` re-runs the evaluation under three different `PYTHONHASHSEED` values and fails if they disagree, because they once did: an RNG seeded from `hash(payment.id)` made the published figure drift between runs while every comparison inside a run stayed valid.

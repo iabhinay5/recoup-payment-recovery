@@ -208,3 +208,84 @@ class TestSandboxPull:
         assert body["added"] == 0
         if not body["ok"]:
             assert body["error"]
+
+
+class TestTheModelIsVisibleAndOptional:
+    """The demo has to show the model working, and has to work when it is not there.
+
+    A screen that cannot run without an API key fails on the day the key expires, which
+    for this project is before the deadline. Both paths are therefore load-bearing.
+    """
+
+    def test_known_codes_resolve_without_calling_a_model(self, client: TestClient) -> None:
+        """The architecture's central claim, on the screen: Razorpay's error_reason is
+        already the taxonomy's vocabulary, so the common case is a dictionary lookup."""
+        r = client.post("/api/classify", json={"error_reason": "insufficient_funds"}).json()
+
+        assert r["code"] == "insufficient_funds"
+        assert r["source"] == "exact"
+        assert r["called_model"] is False
+
+    def test_unresolvable_text_degrades_rather_than_guessing(self, client: TestClient) -> None:
+        """With no provider configured there is nothing to fall back *to* except the
+        conservative unknown default, and it must say so instead of inventing a code."""
+        r = client.post("/api/classify", json={"text": "something nobody has ever seen"}).json()
+
+        assert r["code"] == "__unknown__"
+        assert r["source"] == "fallback"
+        assert r["called_model"] is False
+
+    def test_the_page_says_when_no_model_is_configured(self, client: TestClient) -> None:
+        state = client.get("/api/state").json()
+
+        assert state["llm_model"] is None, "the fixture configures no provider"
+        assert "messages_generated" in state
+
+    def test_outreach_still_produces_a_message_without_a_model(self, client: TestClient) -> None:
+        trace = client.post("/api/inject", json={"decline_code": "payment_cancelled"}).json()
+
+        assert trace["action"] == "outreach"
+        assert trace["message"]["body"]
+        assert trace["message"]["generated"] is False
+
+    def test_the_injected_language_reaches_the_message(self, client: TestClient) -> None:
+        trace = client.post(
+            "/api/inject", json={"decline_code": "payment_cancelled", "language": "HINGLISH"}
+        ).json()
+
+        assert trace["message"]["language"] == "Hinglish"
+
+    def test_an_unknown_language_falls_back_rather_than_erroring(self, client: TestClient) -> None:
+        trace = client.post(
+            "/api/inject", json={"decline_code": "payment_cancelled", "language": "klingon"}
+        ).json()
+
+        assert trace["message"]["language"] == "English"
+
+
+class TestTheServedPolicyIsTheMeasuredOne:
+    def test_a_missing_bandit_file_falls_back_to_the_rule_based_policy(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Never a silently untrained bandit: an untrained LinUCB scores every arm at
+        zero and would pick arm 0 every time, which looks like a decision and is not."""
+        from recoup.dashboard import app as module
+
+        monkeypatch.setattr(module, "BANDIT_PATH", tmp_path / "absent.json")
+        policy, note = module.load_policy()
+
+        assert policy.name == "taxonomy_aware"
+        assert "not found" in note
+
+    def test_a_corrupt_bandit_file_is_reported_not_swallowed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from recoup.dashboard import app as module
+
+        broken = tmp_path / "bandit.json"
+        broken.write_text("{not json", encoding="utf-8")
+        monkeypatch.setattr(module, "BANDIT_PATH", broken)
+        policy, note = module.load_policy()
+
+        assert policy.name == "taxonomy_aware"
+        assert "could not load" in note

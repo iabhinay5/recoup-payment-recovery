@@ -81,7 +81,7 @@ def as_dict(result: EvalResult) -> dict[str, Any]:
     }
 
 
-def run(customers: int, seed: int, epochs: int) -> dict[str, Any]:
+def run(customers: int, seed: int, epochs: int, bandit_out: Path | None = None) -> dict[str, Any]:
     """Train, evaluate, and assemble the results document."""
     params = SimParams(n_customers=customers, seed=seed)
 
@@ -103,6 +103,14 @@ def run(customers: int, seed: int, epochs: int) -> dict[str, Any]:
     # Exploration off before measurement: the reported figure describes the policy that
     # would be deployed, not one still paying for information.
     bandit.explore = False
+
+    if bandit_out is not None:
+        # Persist the trained policy so anything that displays a decision serves *this*
+        # policy rather than retraining its own. A demo showing a differently-trained
+        # bandit from the one these numbers describe would be showing a different system.
+        bandit_out.parent.mkdir(parents=True, exist_ok=True)
+        bandit_out.write_text(json.dumps(bandit.to_dict()), encoding="utf-8")
+        print(f"trained policy written to {bandit_out}")
 
     policies: list[Policy] = [
         NoRetry(),
@@ -174,7 +182,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"--quick: writing to {args.out} so {OUTPUT} is left alone")
 
     customers = args.customers or (QUICK_CUSTOMERS if args.quick else DEFAULT_CUSTOMERS)
-    document = run(customers, args.seed, args.epochs)
+    bandit_out = args.out.with_name(args.out.stem.replace("eval", "bandit") + ".json")
+    document = run(customers, args.seed, args.epochs, bandit_out)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(document, indent=2), encoding="utf-8")

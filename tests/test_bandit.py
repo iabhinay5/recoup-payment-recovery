@@ -213,3 +213,95 @@ class TestFeatures:
     def test_arm_tables_are_non_empty(self) -> None:
         assert len(RETRY_DELAYS_HOURS) > 1
         assert len(OUTREACH_ARMS) > 1
+
+
+class TestTheTrainedPolicyCanBeServed:
+    """A demo that retrains its own bandit is demonstrating a different system.
+
+    ``scripts/run_eval.py`` saves the policy it measured; the dashboard loads that file.
+    These pin the round trip, because a policy that reloads into slightly different
+    behaviour would make the screen and the results file disagree with nobody noticing.
+    """
+
+    def _trained(self, world) -> BanditPolicy:  # type: ignore[no-untyped-def]
+        from recoup.policies import split_world, train_bandit
+
+        train, _ = split_world(world, train_fraction=0.5)
+        policy = BanditPolicy()
+        train_bandit(policy, train, epochs=1)
+        policy.explore = False
+        return policy
+
+    def test_a_reloaded_policy_decides_identically(self, world) -> None:  # type: ignore[no-untyped-def]
+        from recoup.sim.episode import EpisodeState
+
+        trained = self._trained(world)
+        reloaded = BanditPolicy.from_dict(trained.to_dict())
+
+        customers = world.population.customers_by_id
+        checked = 0
+        for payment in world.population.payments[:60]:
+            state = EpisodeState(
+                payment=payment,
+                customer=customers[payment.customer_id],
+                elapsed_hours=0.0,
+                attempts=(),
+                contacts=(),
+                current_decline_code=payment.initial_decline_code,
+                current_instrument_id=payment.instrument_id,
+                in_session=False,
+                opted_out=False,
+                rails=world.rails,
+                params=world.params,
+            )
+            first, second = trained.decide(state), reloaded.decide(state)
+            assert (first.kind, first.delay_hours, first.channel) == (
+                second.kind,
+                second.delay_hours,
+                second.channel,
+            )
+            checked += 1
+        assert checked == 60
+
+    def test_a_reloaded_policy_is_not_still_exploring(self, world) -> None:  # type: ignore[no-untyped-def]
+        """Serving is not learning. An exploring policy would take deliberately
+        suboptimal actions against real customers to buy information."""
+        assert BanditPolicy.from_dict(self._trained(world).to_dict()).explore is False
+
+    def test_weights_trained_on_other_features_are_refused(self, world) -> None:  # type: ignore[no-untyped-def]
+        """The weights are meaningless if the feature vector changed underneath them,
+        and scoring the wrong columns would fail silently rather than loudly."""
+        saved = self._trained(world).to_dict()
+        saved["feature_names"] = ["bias", "something_else"]
+
+        with pytest.raises(ValueError, match="different feature vector"):
+            BanditPolicy.from_dict(saved)
+
+
+class TestTheExplanationIsCheckable:
+    def test_it_scores_every_arm_and_picks_the_best(self, world) -> None:  # type: ignore[no-untyped-def]
+        from recoup.sim.episode import EpisodeState
+
+        policy = BanditPolicy(explore=False)
+        payment = world.population.payments[0]
+        state = EpisodeState(
+            payment=payment,
+            customer=world.population.customers_by_id[payment.customer_id],
+            elapsed_hours=0.0,
+            attempts=(),
+            contacts=(),
+            current_decline_code="insufficient_funds",
+            current_instrument_id=payment.instrument_id,
+            in_session=False,
+            opted_out=False,
+            rails=world.rails,
+            params=world.params,
+        )
+
+        view = policy.explain_dict(state)
+
+        assert len(view["arms"]) == len(RETRY_DELAYS_HOURS)
+        chosen = [a for a in view["arms"] if a["chosen"]]
+        assert len(chosen) == 1, "exactly one arm is the argmax"
+        assert chosen[0]["score"] == max(a["score"] for a in view["arms"])
+        assert chosen[0]["label"] == view["chosen"]["label"]

@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-25T14:58:54+00:00",
-  "git_commit": "ce2e32118bde072bd0ea3364d8fd3aa72988b357",
+  "generated_at": "2026-08-27T18:56:43+00:00",
+  "git_commit": "7d6ef3749d8592b10bf1b4d9a77c78214ca1284c",
   "git_dirty": true,
-  "elapsed_seconds": 170.8,
+  "elapsed_seconds": 44.9,
   "params": {
     "n_customers": 40000,
     "seed": 0,

@@ -22,6 +22,8 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
+from recoup.agent.outreach import sanitise
+from recoup.dashboard.app import build_provider, load_policy
 from recoup.gateway import RazorpayClient, event_from_entity
 from recoup.trace import explain
 
@@ -95,16 +97,55 @@ def describe_failure(payment: dict[str, Any]) -> None:
     so the terminal and the screen cannot describe the same payment differently. See
     docs/DECISIONS.md ADR-009.
     """
-    trace = explain(event_from_entity(payment))
+    from recoup.agent import DeclineNormalizer, OutreachWriter
+
+    provider = build_provider()
+    policy, policy_note = load_policy()
+    normalizer = DeclineNormalizer(provider=provider)
+    writer = OutreachWriter(provider=provider, merchant_name="Chai Point")
+
+    event = event_from_entity(payment)
+    classification = normalizer.classify(
+        error_reason=event.error_reason or None,
+        error_description=event.error_description or None,
+        error_code=event.error_code or None,
+    )
+    trace = explain(
+        event,
+        policy=policy,
+        classification=classification,
+        writer=writer,
+    )
+
+    print()
+    show("policy", policy_note)
+    show("language model", provider.model if provider else "not configured - templates only")
+
     colour = {"pass": GREEN, "refuse": GREEN, "defer": YELLOW, "info": ""}
 
     for index, step in enumerate(trace.steps, start=1):
         print()
-        print(f"{BOLD}{index}. {step.title}{OFF}")
-        show("verdict", step.verdict, colour.get(step.kind, ""))
+        print(f"{BOLD}{index}. {sanitise(step.title)}{OFF}")
+        # sanitise: the model emits characters a Windows console cannot encode, and a
+        # UnicodeEncodeError mid-demo is not a failure anyone wants to explain on camera.
+        show("verdict", sanitise(step.verdict), colour.get(step.kind, ""))
         for label, value in step.fields:
-            show(label, value)
-        print(f"  {DIM}{step.detail}{OFF}")
+            show(label, sanitise(value))
+        print(f"  {DIM}{sanitise(step.detail)}{OFF}")
+
+    if trace.bandit is not None:
+        best = trace.bandit["chosen"]
+        print()
+        print(f"{BOLD}What the learned policy scored{OFF}")
+        for arm in trace.bandit["arms"]:
+            mark = f"{GREEN}<-- chosen{OFF}" if arm["chosen"] else ""
+            print(f"  {DIM}{arm['label']:<16}{OFF} {arm['score']:+.3f}  {mark}")
+        drivers = ", ".join(
+            f"{f['name']} {f['contribution']:+.3f}" for f in trace.bandit["features"][:4]
+        )
+        trained = f"{trace.bandit['trained']:,}"
+        print(f"  {DIM}trained on {trained} decisions; drivers: {drivers}{OFF}")
+        print(f"  {DIM}confidence +/- {best['confidence']:.3f} over {best['pulls']} pulls{OFF}")
 
     if trace.notes:
         print()
